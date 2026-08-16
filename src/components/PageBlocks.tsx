@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Editable } from './Editable';
 import { ImageInput } from './ImageInput';
+import { Model3DInput } from './Model3DInput';
 import { CroppedImage } from './CroppedImage';
 import { ImageCropEditor } from './ImageCropEditor';
 import { LinkEditor } from './LinkEditor';
@@ -12,12 +13,18 @@ import { FONT_LIBRARY, loadFont } from '../design-system/fonts';
 import { useClickAway } from '../design-system/useClickAway';
 import { newBlockId, type CustomPage, type PageBlock, type PageBlockType } from '../data/siteData';
 
+// Three.js is a heavy dependency (the loader + renderer alone are several
+// hundred KB) — loaded only when a page actually has a 3D block, not as
+// part of the main bundle every visitor downloads.
+const Model3DViewer = lazy(() => import('./Model3DViewer').then((m) => ({ default: m.Model3DViewer })));
+
 const BLOCK_LABEL: Record<PageBlockType, string> = {
   heading: 'Heading',
   text: 'Text',
   image: 'Photo',
   button: 'Button',
   divider: 'Divider',
+  model3d: '3D Model',
 };
 
 const SIZE_PX: Record<'sm' | 'md' | 'lg' | 'xl', number> = { sm: 16, md: 20, lg: 32, xl: 48 };
@@ -35,6 +42,8 @@ function newBlock(type: PageBlockType): PageBlock {
     case 'button':
       return { ...base, label: 'Click me', link: { type: 'none' } };
     case 'divider':
+      return base;
+    case 'model3d':
       return base;
   }
 }
@@ -375,6 +384,46 @@ export function PageBlocks({
           )}
 
           {b.type === 'divider' && <hr style={{ border: 'none', borderTop: '1px solid var(--border-default)', margin: 0 }} />}
+
+          {b.type === 'model3d' && (
+            <div>
+              {b.modelSrc && b.modelFormat ? (
+                <Suspense
+                  fallback={
+                    <div style={{ height: 380, borderRadius: 'var(--radius-md)', background: 'var(--surface-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                      Loading viewer…
+                    </div>
+                  }
+                >
+                  <Model3DViewer src={b.modelSrc} format={b.modelFormat} />
+                </Suspense>
+              ) : editable ? (
+                <div
+                  style={{
+                    height: 200,
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px dashed var(--border-strong)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-muted)',
+                    fontSize: 13,
+                  }}
+                >
+                  No 3D model yet
+                </div>
+              ) : null}
+              {editable && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                  <Model3DInput
+                    label={b.modelSrc ? 'Replace model' : '+ 3D model'}
+                    onSelect={(modelSrc, modelFormat, modelFileName) => update(b.id, { modelSrc, modelFormat, modelFileName })}
+                  />
+                  {b.modelFileName && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.modelFileName}</span>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ))}
 

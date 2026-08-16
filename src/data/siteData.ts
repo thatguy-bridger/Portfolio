@@ -54,7 +54,11 @@ export interface SiteSkill {
   color: BadgeColor;
 }
 
-export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider';
+export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d';
+
+/** 3D model formats the viewer can load, by file extension. */
+export const MODEL_FORMATS = ['.glb', '.gltf', '.obj', '.fbx', '.stl', '.ply'] as const;
+export type Model3DFormat = (typeof MODEL_FORMATS)[number];
 
 /** Per-block text styling — overrides the site-wide font for just this one heading/text block. */
 export interface TextEffects {
@@ -89,6 +93,10 @@ export interface PageBlock {
   /** button */
   label?: string;
   link?: TileLink;
+  /** 3d model — a Firebase Storage download URL, plus the format so the viewer knows which loader to use */
+  modelSrc?: string;
+  modelFormat?: Model3DFormat;
+  modelFileName?: string;
 }
 
 /**
