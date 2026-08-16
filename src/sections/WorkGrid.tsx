@@ -169,9 +169,9 @@ function ProjectTile({
     </div>
   );
 
-  if (!editable && tile.link.type === 'internal' && tile.link.slug) {
+  if (!editable && tile.link.type === 'internal' && tile.link.path) {
     return (
-      <Link to={`/mywork/${tile.link.slug}`} style={{ display: 'block', height: '100%', color: 'inherit', textDecoration: 'none' }}>
+      <Link to={`/${tile.link.path}`} style={{ display: 'block', height: '100%', color: 'inherit', textDecoration: 'none' }}>
         {body}
       </Link>
     );
@@ -191,13 +191,11 @@ export function WorkGrid({
   pages,
   editable = false,
   onChange,
-  onPagesChange,
 }: {
   tiles: SiteTile[];
   pages?: CustomPage[];
   editable?: boolean;
   onChange?: (tiles: SiteTile[]) => void;
-  onPagesChange?: (pages: CustomPage[]) => void;
 }) {
   const { ref, visible } = useReveal<HTMLDivElement>();
   const [editingTileId, setEditingTileId] = useState<string | null>(null);
@@ -285,7 +283,6 @@ export function WorkGrid({
           tile={editingTile}
           onChangeTile={(patch) => updateTile(editingTile.id, patch)}
           pages={pages ?? []}
-          onChangePages={(next) => onPagesChange?.(next)}
         />
       )}
     </section>

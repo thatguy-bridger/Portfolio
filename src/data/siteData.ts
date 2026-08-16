@@ -27,8 +27,8 @@ export interface TileLink {
   type: 'none' | 'external' | 'internal';
   /** external: full https:// URL */
   url?: string;
-  /** internal: slug, resolves to /mywork/<slug> */
-  slug?: string;
+  /** internal: a CustomPage's path, e.g. "school/clubs/justserve" */
+  path?: string;
 }
 
 export interface SiteTile {
@@ -67,17 +67,22 @@ export interface PageBlock {
 }
 
 /**
- * A standalone, freely-creatable page — its own URL under /mywork/<slug>,
- * edited with the same endless block editor as the main page-content
- * section. A work tile can point its link at one of these, but a page
- * doesn't have to belong to any tile.
+ * A standalone, freely-creatable page at any URL path (e.g.
+ * "school/clubs/justserve", not just under a fixed prefix), edited with the
+ * same endless block editor as the main page-content section and given its
+ * own tab in the Builder. A work tile can point its link at one of these,
+ * but a page doesn't have to belong to any tile.
  */
 export interface CustomPage {
   id: string;
-  slug: string;
+  /** full URL path, no leading/trailing slash, e.g. "school/clubs/justserve" */
+  path: string;
   title: string;
   blocks: PageBlock[];
 }
+
+/** Top-level routes a custom page's path can never occupy — they're static routes. */
+export const RESERVED_PATHS = new Set(['login', 'edit']);
 
 export interface SiteData {
   hero: {
@@ -97,7 +102,7 @@ export interface SiteData {
     email: string;
   };
   tiles: SiteTile[];
-  /** standalone pages under /mywork/<slug>, independent of any tile */
+  /** standalone pages at any URL path, independent of any tile */
   pages: CustomPage[];
   /** freeform, endlessly-addable content section between Work and About */
   blocks: PageBlock[];
@@ -172,10 +177,16 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Ensures a slug is non-empty and doesn't collide with an existing page. */
-export function uniqueSlug(base: string, existing: CustomPage[], ignoreId?: string): string {
-  const clean = slugify(base) || 'page';
-  const taken = new Set(existing.filter((p) => p.id !== ignoreId).map((p) => p.slug));
+/** Slugifies each "/"-separated segment of a path and drops empty ones, e.g. "School/ Clubs //JustServe" → "school/clubs/justserve". */
+export function sanitizePath(input: string): string {
+  return input.split('/').map(slugify).filter(Boolean).join('/');
+}
+
+/** Ensures a path is non-empty, isn't a reserved route, and doesn't collide with an existing page. */
+export function uniquePath(base: string, existing: CustomPage[], ignoreId?: string): string {
+  let clean = sanitizePath(base) || 'page';
+  if (RESERVED_PATHS.has(clean)) clean = `${clean}-page`;
+  const taken = new Set(existing.filter((p) => p.id !== ignoreId).map((p) => p.path));
   if (!taken.has(clean)) return clean;
   let i = 2;
   while (taken.has(`${clean}-${i}`)) i++;

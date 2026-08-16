@@ -7,7 +7,7 @@ import { subscribePublished } from '../firebase/site';
 import { useApplyThemeFromData } from '../design-system/useApplyThemeFromData';
 
 export function ProjectPage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { '*': path } = useParams<{ '*': string }>();
   const [data, setData] = useState<SiteData | null>(null);
   const [loaded, setLoaded] = useState(!isFirebaseConfigured);
 
@@ -22,7 +22,7 @@ export function ProjectPage() {
 
   useApplyThemeFromData(data ?? DEFAULT_SITE_DATA);
 
-  const page = data?.pages.find((p) => p.slug === slug);
+  const page = data?.pages.find((p) => p.path === path);
 
   return (
     <div style={{ minHeight: '100vh', padding: '64px 24px 96px', maxWidth: 760, margin: '0 auto', fontFamily: 'var(--font-body)' }}>

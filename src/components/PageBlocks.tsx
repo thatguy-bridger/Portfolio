@@ -328,7 +328,7 @@ export function PageBlocks({
               ) : (
                 <Button variant="primary" onClick={() => {
                   if (b.link?.type === 'external' && b.link.url) window.open(b.link.url, '_blank', 'noopener,noreferrer');
-                  else if (b.link?.type === 'internal' && b.link.slug) navigate(`/mywork/${b.link.slug}`);
+                  else if (b.link?.type === 'internal' && b.link.path) navigate(`/${b.link.path}`);
                 }}>
                   {b.label || 'Button'}
                 </Button>

@@ -14,7 +14,6 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<PublicSite />} />
-            <Route path="/mywork/:slug" element={<ProjectPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route
               path="/edit"
@@ -24,6 +23,8 @@ export default function App() {
                 </RequireAuth>
               }
             />
+            {/* Custom pages live at any path the user picks (e.g. /school/clubs/justserve) — matched last, after the fixed routes above. */}
+            <Route path="/*" element={<ProjectPage />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
