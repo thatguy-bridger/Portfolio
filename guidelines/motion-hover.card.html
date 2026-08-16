@@ -1,0 +1,8 @@
+<!-- @dsCard group="Motion" viewport="700x180" name="Hover lift" subtitle="translateY(-8px) + shadow grow on card hover; scale(1.05) on buttons" -->
+<html><head><link rel="stylesheet" href="../styles.css"><style>body{margin:0;padding:24px;background:var(--bg);display:flex;gap:20px;align-items:flex-start;font-family:Inter,sans-serif}
+.card{width:150px;height:110px;background:var(--surface-2);border:1px solid var(--border-1);border-radius:16px;transition:transform .3s var(--ease-standard),box-shadow .3s var(--ease-standard);display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:12px}
+.card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg)}
+.pill{padding:10px 22px;border-radius:9999px;background:var(--indigo-500);color:#fff;font-weight:600;font-size:13px;border:none;transition:transform .3s var(--ease-standard),box-shadow .3s var(--ease-standard)}
+.pill:hover{transform:scale(1.05);box-shadow:var(--shadow-glow-indigo)}
+</style></head>
+<body><div class="card">hover me</div><button class="pill">hover me</button></body></html>
