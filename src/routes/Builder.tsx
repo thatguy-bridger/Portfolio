@@ -145,7 +145,13 @@ export function Builder() {
 
       <div style={{ paddingTop: 52 }}>
         <Hero hero={data.hero} editable onChange={(hero) => setData({ ...data, hero })} />
-        <WorkGrid tiles={data.tiles} editable onChange={(tiles) => setData({ ...data, tiles })} />
+        <WorkGrid
+          tiles={data.tiles}
+          projectPages={data.projectPages}
+          editable
+          onChange={(tiles) => setData({ ...data, tiles })}
+          onProjectPagesChange={(projectPages) => setData({ ...data, projectPages })}
+        />
         <About about={data.about} editable onChange={(about) => setData({ ...data, about })} />
         <Contact contact={data.contact} editable onChange={(contact) => setData({ ...data, contact })} />
       </div>
