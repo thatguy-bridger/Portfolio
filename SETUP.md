@@ -1,8 +1,8 @@
 # Setup
 
 This app has no server to run yourself. It's a static React site (deployed
-to Vercel) backed by Firebase (Firestore for data, Firebase Auth for your
-one owner login) — both free-tier, nothing to provision or maintain.
+via GitHub Pages) backed by Firebase (Firestore for data, Firebase Auth for
+your one owner login) — both free, nothing to provision or maintain.
 
 Two things happen once you're set up:
 
@@ -62,29 +62,53 @@ Visit `http://localhost:5173/login`, sign in with the user you created in
 step 1.4, and you'll land in `/edit`. Try editing some text and watch the
 "Saving… / Saved" indicator, then hit **Publish** and check `/` updates.
 
-## 4. Deploy to Vercel
+## 4. Deploy via GitHub Pages
 
-1. Go to https://vercel.com → sign up/in (GitHub login is easiest) → **Add
-   New… → Project** → import `thatguy-bridger/Portfolio`.
-2. Vercel auto-detects Vite; leave the build settings as-is.
-3. Before deploying, add the same six `VITE_FIREBASE_*` variables from your
-   `.env.local` under **Environment Variables**.
-4. Deploy. You'll get a free `*.vercel.app` URL immediately — sign in at
-   `/login` there the same way to confirm it works end-to-end.
+Deployment is automatic: [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)
+builds and publishes the app on every push to `main` (and can also be run
+manually from the **Actions** tab).
+
+> **Note:** GitHub Pages via Actions is free for **public** repositories.
+> If `thatguy-bridger/Portfolio` is private, either make it public or
+> you'll need a paid GitHub plan (Pro/Team/Enterprise) that includes Pages
+> for private repos.
+
+1. Add your Firebase config as **repository secrets** (not the same as
+   `.env.local` — GitHub Actions can't read that file): on GitHub, go to
+   **Settings → Secrets and variables → Actions → New repository secret**,
+   and add each of these six, with the same values as your `.env.local`:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+2. Go to **Settings → Pages → Build and deployment → Source**, and set it
+   to **GitHub Actions** (not "Deploy from a branch").
+3. Merge this work into `main` (or, to test first, go to the **Actions**
+   tab → **Deploy to GitHub Pages** → **Run workflow** and pick this
+   branch). Watch the workflow run — it builds the app and publishes it.
+4. Once it succeeds, your site is live at `https://thatguy-bridger.github.io/Portfolio/`
+   until the custom domain below takes over. Sign in at `/login` there to
+   confirm it works end-to-end.
 
 ## 5. Point portfolio.bridgerjones.com at it
 
-1. In the Vercel project: **Settings → Domains → Add** →
-   `portfolio.bridgerjones.com`. Vercel will show you a DNS target
-   (typically a CNAME to `cname.vercel-dns.com`).
-2. In Namecheap: **Domain List → Manage** (bridgerjones.com) →
+The repo already includes a [`public/CNAME`](./public/CNAME) file containing
+`portfolio.bridgerjones.com`, so every deploy tells GitHub Pages to serve
+that domain — you don't need to re-enter it after each deploy.
+
+1. In Namecheap: **Domain List → Manage** (bridgerjones.com) →
    **Advanced DNS → Add New Record**:
    - Type: `CNAME Record`
    - Host: `portfolio`
-   - Value: `cname.vercel-dns.com` (use the exact value Vercel shows you)
+   - Value: `thatguy-bridger.github.io.`
    - TTL: Automatic
-3. Save. DNS usually propagates within a few minutes to a few hours; Vercel
-   auto-issues an SSL certificate once it sees the record.
+2. Save, then in GitHub: **Settings → Pages**, confirm the custom domain
+   shows `portfolio.bridgerjones.com` with a green checkmark (DNS check
+   passed), and tick **Enforce HTTPS** once it's available (GitHub
+   auto-issues the certificate — this can take anywhere from a few minutes
+   to a few hours after DNS propagates).
 
 That's it — `portfolio.bridgerjones.com` will always show whatever you last
 hit **Publish** on at `/edit`.
