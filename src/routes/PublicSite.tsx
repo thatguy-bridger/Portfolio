@@ -41,28 +41,29 @@ export function PublicSite() {
         <About about={data.about} />
         <Contact contact={data.contact} />
       </main>
-      {user && (
-        <Link
-          to="/edit"
-          style={{
-            position: 'fixed',
-            bottom: 24,
-            right: 24,
-            zIndex: 90,
-            padding: '10px 18px',
-            borderRadius: 'var(--radius-pill)',
-            background: 'var(--accent-primary)',
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: 600,
-            textDecoration: 'none',
-            boxShadow: 'var(--shadow-lg)',
-            fontFamily: 'var(--font-body)',
-          }}
-        >
-          Edit this site
-        </Link>
-      )}
+      <Link
+        to={user ? '/edit' : '/login'}
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 90,
+          padding: '10px 18px',
+          borderRadius: 'var(--radius-pill)',
+          background: user ? 'var(--accent-primary)' : 'var(--surface-glass)',
+          backdropFilter: user ? undefined : 'var(--blur-glass)',
+          WebkitBackdropFilter: user ? undefined : 'var(--blur-glass)',
+          border: user ? 'none' : '1px solid var(--border-default)',
+          color: user ? '#fff' : 'var(--text-muted)',
+          fontSize: 13,
+          fontWeight: 600,
+          textDecoration: 'none',
+          boxShadow: 'var(--shadow-lg)',
+          fontFamily: 'var(--font-body)',
+        }}
+      >
+        {user ? 'Edit this site' : 'Sign in'}
+      </Link>
     </>
   );
 }
