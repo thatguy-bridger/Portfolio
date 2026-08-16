@@ -10,10 +10,14 @@ function clamp(n: number, min: number, max: number) {
 export function ImageCropEditor({
   src,
   crop,
+  width,
+  height,
   onChange,
 }: {
   src: string;
   crop?: ImageCrop;
+  width?: number;
+  height?: number;
   onChange: (crop: ImageCrop) => void;
 }) {
   const c = crop ?? DEFAULT_CROP;
@@ -41,7 +45,7 @@ export function ImageCropEditor({
         style={{ position: 'relative', cursor: 'crosshair', touchAction: 'none' }}
         title="Click or drag to set the focal point"
       >
-        <CroppedImage src={src} crop={c} aspect="4 / 3" rounded />
+        <CroppedImage src={src} crop={c} width={width} height={height} rounded />
         <div
           style={{
             position: 'absolute',

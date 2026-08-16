@@ -6,14 +6,17 @@ import { PageContent } from '../sections/PageContent';
 import { About } from '../sections/About';
 import { Contact } from '../sections/Contact';
 import { CustomizePanel } from '../components/CustomizePanel';
-import { PageSwitcher } from '../components/PageSwitcher';
+import { PageTree } from '../components/PageTree';
 import { CustomPageCanvas } from '../components/CustomPageCanvas';
 import { Button } from '../components/ui/Button';
 import { newPageId, uniquePath, type SiteData } from '../data/siteData';
 import { getDraft, getPublished, publishDraft, saveDraft } from '../firebase/site';
 import { useApplyThemeFromData } from '../design-system/useApplyThemeFromData';
+import { useIsNarrow } from '../design-system/useIsNarrow';
 import { useTheme } from '../design-system/theme';
 import { useAuth } from '../auth/AuthProvider';
+
+const TOPBAR_HEIGHT = 52;
 
 type SaveStatus = 'loading' | 'idle' | 'saving' | 'saved' | 'error';
 
@@ -25,6 +28,8 @@ export function Builder() {
   const [publishedJson, setPublishedJson] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const narrow = useIsNarrow();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSave = useRef(true);
 
@@ -90,6 +95,12 @@ export function Builder() {
     const page = { id: newPageId(), path: uniquePath('untitled-page', data.pages), title: 'Untitled page', blocks: [] };
     setData({ ...data, pages: [...data.pages, page] });
     setActivePageId(page.id);
+    setSidebarOpen(false);
+  }
+
+  function selectPage(id: string | null) {
+    setActivePageId(id);
+    setSidebarOpen(false);
   }
 
   function updatePage(id: string, patch: Partial<SiteData['pages'][number]>) {
@@ -149,6 +160,23 @@ export function Builder() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          {narrow && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              style={{
+                border: '1px solid var(--border-default)',
+                background: 'var(--surface-card)',
+                borderRadius: 'var(--radius-md)',
+                padding: '5px 10px',
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--text-body)',
+                cursor: 'pointer',
+              }}
+            >
+              ☰ Pages
+            </button>
+          )}
           <strong style={{ color: 'var(--text-heading)', whiteSpace: 'nowrap' }}>Builder</strong>
           <SaveIndicator status={status} />
           {hasUnpublished && !publishing && (
@@ -168,26 +196,69 @@ export function Builder() {
         </div>
       </div>
 
-      <div style={{ paddingTop: 52 }}>
-        <PageSwitcher pages={data.pages} activeId={activePageId} onSelect={setActivePageId} onCreate={createPage} />
-
-        {activePage ? (
-          <CustomPageCanvas
-            page={activePage}
-            pages={data.pages}
-            onChange={(patch) => updatePage(activePage.id, patch)}
-            onDelete={() => deletePage(activePage.id)}
-          />
-        ) : (
-          <>
-            <Hero hero={data.hero} editable onChange={(hero) => setData({ ...data, hero })} />
-            <WorkGrid tiles={data.tiles} pages={data.pages} editable onChange={(tiles) => setData({ ...data, tiles })} />
-            <PageContent blocks={data.blocks} editable pages={data.pages} onChange={(blocks) => setData({ ...data, blocks })} />
-            <About about={data.about} editable onChange={(about) => setData({ ...data, about })} />
-            <Contact contact={data.contact} editable onChange={(contact) => setData({ ...data, contact })} />
-          </>
+      <div style={{ paddingTop: TOPBAR_HEIGHT, display: 'flex', alignItems: 'flex-start' }}>
+        {!narrow && (
+          <div
+            style={{
+              width: 240,
+              flexShrink: 0,
+              position: 'sticky',
+              top: TOPBAR_HEIGHT,
+              alignSelf: 'flex-start',
+              maxHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
+              overflowY: 'auto',
+              padding: '20px 14px',
+              borderRight: '1px solid var(--border-default)',
+            }}
+          >
+            <PageTree pages={data.pages} activeId={activePageId} onSelect={selectPage} onCreate={createPage} />
+          </div>
         )}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {activePage ? (
+            <CustomPageCanvas
+              page={activePage}
+              pages={data.pages}
+              onChange={(patch) => updatePage(activePage.id, patch)}
+              onDelete={() => deletePage(activePage.id)}
+            />
+          ) : (
+            <>
+              <Hero hero={data.hero} editable onChange={(hero) => setData({ ...data, hero })} />
+              <WorkGrid tiles={data.tiles} pages={data.pages} editable onChange={(tiles) => setData({ ...data, tiles })} />
+              <PageContent blocks={data.blocks} editable pages={data.pages} onChange={(blocks) => setData({ ...data, blocks })} />
+              <About about={data.about} editable onChange={(about) => setData({ ...data, about })} />
+              <Contact contact={data.contact} editable onChange={(contact) => setData({ ...data, contact })} />
+            </>
+          )}
+        </div>
       </div>
+
+      {narrow && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--surface-overlay)' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: 'min(80vw, 280px)',
+              background: 'var(--surface-panel)',
+              padding: '20px 14px',
+              overflowY: 'auto',
+              boxShadow: 'var(--shadow-xl)',
+            }}
+          >
+            <PageTree pages={data.pages} activeId={activePageId} onSelect={selectPage} onCreate={createPage} />
+          </div>
+        </div>
+      )}
+
       <CustomizePanel />
     </>
   );

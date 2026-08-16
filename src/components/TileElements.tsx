@@ -35,8 +35,8 @@ export function TileElements({
     onChange?.([...elements, { id: newElementId(), type: 'text', content: 'New text' }]);
   }
 
-  function addImage(src: string) {
-    onChange?.([...elements, { id: newElementId(), type: 'image', src, alt: '' }]);
+  function addImage(src: string, width: number, height: number) {
+    onChange?.([...elements, { id: newElementId(), type: 'image', src, alt: '', width, height }]);
   }
 
   return (
@@ -54,7 +54,7 @@ export function TileElements({
             />
           ) : (
             <div>
-              <CroppedImage src={el.src} alt={el.alt} crop={el.crop} />
+              <CroppedImage src={el.src} alt={el.alt} crop={el.crop} width={el.width} height={el.height} />
               {editable && (
                 <button
                   type="button"
@@ -76,7 +76,7 @@ export function TileElements({
               )}
               {editable && adjustingId === el.id && el.src && (
                 <div style={{ marginTop: 8 }}>
-                  <ImageCropEditor src={el.src} crop={el.crop} onChange={(crop) => updateEl(el.id, { crop })} />
+                  <ImageCropEditor src={el.src} crop={el.crop} width={el.width} height={el.height} onChange={(crop) => updateEl(el.id, { crop })} />
                 </div>
               )}
             </div>

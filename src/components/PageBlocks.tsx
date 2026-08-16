@@ -263,7 +263,7 @@ export function PageBlocks({
           {b.type === 'image' && (
             <div>
               {b.src ? (
-                <CroppedImage src={b.src} alt={b.alt} crop={b.crop} aspect="16 / 9" />
+                <CroppedImage src={b.src} alt={b.alt} crop={b.crop} width={b.width} height={b.height} />
               ) : editable ? (
                 <div
                   style={{
@@ -282,7 +282,10 @@ export function PageBlocks({
               ) : null}
               {editable && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <ImageInput label={b.src ? 'Replace photo' : '+ Photo'} onSelect={(src) => update(b.id, { src, crop: undefined })} />
+                  <ImageInput
+                    label={b.src ? 'Replace photo' : '+ Photo'}
+                    onSelect={(src, width, height) => update(b.id, { src, width, height, crop: undefined })}
+                  />
                   {b.src && (
                     <button
                       type="button"
@@ -305,7 +308,7 @@ export function PageBlocks({
               )}
               {editable && adjustingId === b.id && b.src && (
                 <div style={{ marginTop: 8 }}>
-                  <ImageCropEditor src={b.src} crop={b.crop} onChange={(crop) => update(b.id, { crop })} />
+                  <ImageCropEditor src={b.src} crop={b.crop} width={b.width} height={b.height} onChange={(crop) => update(b.id, { crop })} />
                 </div>
               )}
             </div>

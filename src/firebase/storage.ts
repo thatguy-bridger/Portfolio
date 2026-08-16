@@ -6,11 +6,18 @@ function newFileId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** Compresses and uploads an image file, returning its public download URL. */
-export async function uploadImage(file: File): Promise<string> {
-  const blob = await compressImageToBlob(file);
+export interface UploadedImage {
+  url: string;
+  width: number;
+  height: number;
+}
+
+/** Compresses and uploads an image file, returning its public download URL and natural pixel size. */
+export async function uploadImage(file: File): Promise<UploadedImage> {
+  const { blob, width, height } = await compressImageToBlob(file);
   const path = `uploads/${newFileId()}.jpg`;
   const storageRef = ref(getFirebaseStorage(), path);
   await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
-  return getDownloadURL(storageRef);
+  const url = await getDownloadURL(storageRef);
+  return { url, width, height };
 }

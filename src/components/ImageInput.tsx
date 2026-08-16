@@ -1,7 +1,13 @@
 import { useRef, useState } from 'react';
 import { uploadImage } from '../firebase/storage';
 
-export function ImageInput({ onSelect, label = '+ Photo' }: { onSelect: (url: string) => void; label?: string }) {
+export function ImageInput({
+  onSelect,
+  label = '+ Photo',
+}: {
+  onSelect: (src: string, width: number, height: number) => void;
+  label?: string;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,8 +19,8 @@ export function ImageInput({ onSelect, label = '+ Photo' }: { onSelect: (url: st
     setBusy(true);
     setError(null);
     try {
-      const url = await uploadImage(file);
-      onSelect(url);
+      const { url, width, height } = await uploadImage(file);
+      onSelect(url, width, height);
     } catch {
       setError('Upload failed — check Storage is enabled.');
     } finally {

@@ -9,7 +9,6 @@ export interface BentoTile {
 
 const ROW_HEIGHT = 96;
 const GAP = 16;
-const MAX_ROW_SPAN = 4;
 
 function useColumnCount() {
   const [columns, setColumns] = useState(6);
@@ -84,8 +83,11 @@ function BentoTileView({
 }) {
   const [dragging, setDragging] = useState(false);
   const dragState = useRef({ startX: 0, startY: 0, startCol: 1, startRow: 1, cellWidth: 100 });
+  // Width still clamps to the current breakpoint's column count so a tile sized wide on
+  // desktop doesn't force horizontal overflow on mobile — that's responsive display, not a
+  // size limit. Height has no cap at all: drag as tall as you want.
   const colSpan = Math.min(tile.colSpan, columns);
-  const rowSpan = Math.min(tile.rowSpan, MAX_ROW_SPAN);
+  const rowSpan = tile.rowSpan;
 
   function onPointerDown(e: React.PointerEvent) {
     e.preventDefault();
@@ -103,7 +105,7 @@ function BentoTileView({
     const deltaCols = Math.round((e.clientX - startX) / cellWidth);
     const deltaRows = Math.round((e.clientY - startY) / (ROW_HEIGHT + GAP));
     const nextCol = Math.min(columns, Math.max(1, startCol + deltaCols));
-    const nextRow = Math.min(MAX_ROW_SPAN, Math.max(1, startRow + deltaRows));
+    const nextRow = Math.max(1, startRow + deltaRows);
     onResize(nextCol, nextRow);
   }
 

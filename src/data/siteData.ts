@@ -3,9 +3,9 @@ import type { GlassCardAccent } from '../components/ui/GlassCard';
 import { DEFAULT_BODY_FONT, DEFAULT_DISPLAY_FONT } from '../design-system/fonts';
 
 export interface ImageCrop {
-  /** 1 = fits the frame (object-fit: cover); up to ~3 to zoom in further */
+  /** 1 = the whole photo, at its own natural aspect ratio, no cropping; >1 zooms in around the focal point */
   zoom: number;
-  /** focal point, 0-100 — maps to CSS object-position / transform-origin */
+  /** focal point, 0-100 — where the zoom is centered / anchored */
   posX: number;
   posY: number;
 }
@@ -21,6 +21,9 @@ export interface TileElement {
   src?: string;
   alt?: string;
   crop?: ImageCrop;
+  /** natural pixel size of the uploaded image, used to render at its own aspect ratio with no forced crop */
+  width?: number;
+  height?: number;
 }
 
 export interface TileLink {
@@ -61,6 +64,9 @@ export interface PageBlock {
   src?: string;
   alt?: string;
   crop?: ImageCrop;
+  /** natural pixel size of the uploaded image, used to render at its own aspect ratio with no forced crop */
+  width?: number;
+  height?: number;
   /** button */
   label?: string;
   link?: TileLink;
