@@ -1,16 +1,34 @@
-import { Badge } from '../components/ui/Badge';
+import { Badge, type BadgeColor } from '../components/ui/Badge';
+import { Editable } from '../components/Editable';
 import { useReveal } from '../design-system/useReveal';
+import type { SiteData, SiteSkill } from '../data/siteData';
 
-const SKILLS: Array<{ label: string; color: 'indigo' | 'purple' | 'orange' | 'pink' | 'green' }> = [
-  { label: 'Product design', color: 'indigo' },
-  { label: 'Design systems', color: 'purple' },
-  { label: 'Prototyping', color: 'orange' },
-  { label: 'Front-end', color: 'green' },
-  { label: 'Brand', color: 'pink' },
-];
+const COLOR_CYCLE: BadgeColor[] = ['indigo', 'purple', 'orange', 'pink', 'green', 'red'];
 
-export function About() {
+export function About({
+  about,
+  editable = false,
+  onChange,
+}: {
+  about: SiteData['about'];
+  editable?: boolean;
+  onChange?: (about: SiteData['about']) => void;
+}) {
   const { ref, visible } = useReveal<HTMLDivElement>();
+
+  function removeSkill(index: number) {
+    onChange?.({ ...about, skills: about.skills.filter((_, i) => i !== index) });
+  }
+
+  function addSkill() {
+    const color = COLOR_CYCLE[about.skills.length % COLOR_CYCLE.length];
+    const skill: SiteSkill = { label: 'New skill', color };
+    onChange?.({ ...about, skills: [...about.skills, skill] });
+  }
+
+  function renameSkill(index: number, label: string) {
+    onChange?.({ ...about, skills: about.skills.map((s, i) => (i === index ? { ...s, label } : s)) });
+  }
 
   return (
     <section id="about" style={{ padding: '120px 24px', maxWidth: 1080, margin: '0 auto' }}>
@@ -36,16 +54,46 @@ export function About() {
         />
         <div>
           <h2 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 16 }}>About</h2>
-          <p style={{ fontSize: 16, color: 'var(--text-body)', lineHeight: 1.7, marginBottom: 20, fontFamily: 'var(--font-body)' }}>
-            I'm a product designer who ships. Ten years across fintech, travel, and creative tools — I care most
-            about the gap between a good idea and a good product, and closing it fast without losing the craft.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {SKILLS.map((s) => (
-              <Badge key={s.label} color={s.color}>
-                {s.label}
-              </Badge>
+          <Editable
+            editable={editable}
+            as="p"
+            multiline
+            value={about.text}
+            onCommit={(v) => onChange?.({ ...about, text: v })}
+            style={{ fontSize: 16, color: 'var(--text-body)', lineHeight: 1.7, marginBottom: 20, fontFamily: 'var(--font-body)' }}
+          />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            {about.skills.map((s, i) => (
+              <span key={`${s.label}-${i}`} style={{ position: 'relative', display: 'inline-flex' }}>
+                {editable ? (
+                  <Editable
+                    editable
+                    value={s.label}
+                    onCommit={(v) => renameSkill(i, v)}
+                    style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 'var(--radius-pill)', background: `var(--${s.color}-500)`, color: '#fff' }}
+                  />
+                ) : (
+                  <Badge color={s.color}>{s.label}</Badge>
+                )}
+                {editable && (
+                  <button
+                    onClick={() => removeSkill(i)}
+                    title="Remove"
+                    style={{ marginLeft: 2, border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11 }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </span>
             ))}
+            {editable && (
+              <button
+                onClick={addSkill}
+                style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 'var(--radius-pill)', border: '1px dashed var(--border-strong)', background: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                + Add
+              </button>
+            )}
           </div>
         </div>
       </div>

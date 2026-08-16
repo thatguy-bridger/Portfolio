@@ -1,9 +1,23 @@
 import { HeroCanvas } from '../components/HeroCanvas';
 import { Button } from '../components/ui/Button';
+import { Editable } from '../components/Editable';
 import { useReveal } from '../design-system/useReveal';
+import type { SiteData } from '../data/siteData';
 
-export function Hero() {
+export function Hero({
+  hero,
+  editable = false,
+  onChange,
+}: {
+  hero: SiteData['hero'];
+  editable?: boolean;
+  onChange?: (hero: SiteData['hero']) => void;
+}) {
   const { ref, visible } = useReveal<HTMLDivElement>();
+
+  function patch(field: keyof SiteData['hero'], value: string) {
+    onChange?.({ ...hero, [field]: value });
+  }
 
   return (
     <section
@@ -31,8 +45,12 @@ export function Hero() {
           transition: 'opacity 0.8s var(--ease-standard), transform 0.8s var(--ease-standard)',
         }}
       >
-        <div
+        <Editable
+          editable={editable}
+          value={hero.eyebrow}
+          onCommit={(v) => patch('eyebrow', v)}
           style={{
+            display: 'block',
             fontSize: 14,
             fontWeight: 600,
             color: 'var(--accent-primary)',
@@ -40,9 +58,7 @@ export function Hero() {
             textTransform: 'uppercase',
             marginBottom: 16,
           }}
-        >
-          Product Designer
-        </div>
+        />
         <h1
           style={{
             fontSize: 'clamp(40px, 7vw, 76px)',
@@ -52,22 +68,30 @@ export function Hero() {
             color: 'var(--text-heading)',
           }}
         >
-          Designing calm,{' '}
-          <span
+          <Editable editable={editable} as="span" value={hero.headlineStart} onCommit={(v) => patch('headlineStart', v)} />{' '}
+          <Editable
+            editable={editable}
+            as="span"
+            value={hero.headlineHighlight}
+            onCommit={(v) => patch('headlineHighlight', v)}
             style={{
               background: 'linear-gradient(90deg, var(--accent-primary), var(--purple-400))',
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',
-              color: 'transparent',
+              color: editable ? undefined : 'transparent',
+              WebkitTextFillColor: editable ? undefined : 'transparent',
             }}
-          >
-            useful
-          </span>{' '}
-          software.
+          />{' '}
+          <Editable editable={editable} as="span" value={hero.headlineEnd} onCommit={(v) => patch('headlineEnd', v)} />
         </h1>
-        <p style={{ fontSize: 18, color: 'var(--text-body)', margin: '20px auto 0', maxWidth: 520, lineHeight: 1.6, fontFamily: 'var(--font-body)' }}>
-          I partner with startups to turn fuzzy ideas into shipped products — from first sketch to design system.
-        </p>
+        <Editable
+          editable={editable}
+          as="p"
+          multiline
+          value={hero.subtitle}
+          onCommit={(v) => patch('subtitle', v)}
+          style={{ fontSize: 18, color: 'var(--text-body)', margin: '20px auto 0', maxWidth: 520, lineHeight: 1.6, fontFamily: 'var(--font-body)' }}
+        />
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 32 }}>
           <Button variant="primary" size="lg" onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}>
             See my work

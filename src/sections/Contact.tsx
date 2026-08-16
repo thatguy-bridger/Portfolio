@@ -1,11 +1,18 @@
-import { useState } from 'react';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { Editable } from '../components/Editable';
 import { useReveal } from '../design-system/useReveal';
+import type { SiteData } from '../data/siteData';
 
-export function Contact() {
+export function Contact({
+  contact,
+  editable = false,
+  onChange,
+}: {
+  contact: SiteData['contact'];
+  editable?: boolean;
+  onChange?: (contact: SiteData['contact']) => void;
+}) {
   const { ref, visible } = useReveal<HTMLDivElement>();
-  const [email, setEmail] = useState('');
 
   return (
     <section id="contact" style={{ padding: '120px 24px 80px', maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
@@ -17,21 +24,41 @@ export function Contact() {
           transition: 'opacity 0.6s ease, transform 0.6s ease',
         }}
       >
-        <h2 style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 12 }}>Let's work together</h2>
-        <p style={{ fontSize: 16, color: 'var(--text-body)', marginBottom: 28, fontFamily: 'var(--font-body)' }}>
-          Have a project in mind? Drop your email and I'll get back to you within a day.
-        </p>
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', maxWidth: 420, margin: '0 auto' }}
-        >
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <Button type="submit" variant="primary">
-            Say hello
-          </Button>
-        </form>
+        <Editable
+          editable={editable}
+          as="h2"
+          value={contact.heading}
+          onCommit={(v) => onChange?.({ ...contact, heading: v })}
+          style={{ fontSize: 32, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 12 }}
+        />
+        <Editable
+          editable={editable}
+          as="p"
+          multiline
+          value={contact.subtext}
+          onCommit={(v) => onChange?.({ ...contact, subtext: v })}
+          style={{ fontSize: 16, color: 'var(--text-body)', marginBottom: 28, fontFamily: 'var(--font-body)' }}
+        />
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Editable
+            editable={editable}
+            value={contact.email}
+            onCommit={(v) => onChange?.({ ...contact, email: v })}
+            style={{
+              fontSize: 15,
+              fontWeight: 600,
+              padding: '11px 22px',
+              borderRadius: 'var(--radius-pill)',
+              border: '1px solid var(--border-default)',
+              color: 'var(--text-heading)',
+            }}
+          />
+          {!editable && (
+            <Button variant="primary" onClick={() => (window.location.href = `mailto:${contact.email}`)}>
+              Say hello
+            </Button>
+          )}
+        </div>
         <footer
           style={{
             marginTop: 80,
@@ -44,7 +71,7 @@ export function Contact() {
             fontFamily: 'var(--font-body)',
           }}
         >
-          <span>© {new Date().getFullYear()} Jane Doe</span>
+          <span>© {new Date().getFullYear()}</span>
           <span>Built with Portfolio Builder</span>
         </footer>
       </div>

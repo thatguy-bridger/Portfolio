@@ -1,29 +1,30 @@
-import { ScrollProgress } from './components/ScrollProgress';
-import { CustomizePanel } from './components/CustomizePanel';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from './design-system/theme';
-import { Hero } from './sections/Hero';
-import { WorkGrid } from './sections/WorkGrid';
-import { About } from './sections/About';
-import { Contact } from './sections/Contact';
-
-const SECTIONS = [
-  { id: 'hero', label: 'Intro' },
-  { id: 'work', label: 'Work' },
-  { id: 'about', label: 'About' },
-  { id: 'contact', label: 'Contact' },
-];
+import { AuthProvider } from './auth/AuthProvider';
+import { RequireAuth } from './auth/RequireAuth';
+import { LoginPage } from './auth/LoginPage';
+import { PublicSite } from './routes/PublicSite';
+import { Builder } from './routes/Builder';
 
 export default function App() {
   return (
     <ThemeProvider>
-      <ScrollProgress sections={SECTIONS} />
-      <main>
-        <Hero />
-        <WorkGrid />
-        <About />
-        <Contact />
-      </main>
-      <CustomizePanel />
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<PublicSite />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/edit"
+              element={
+                <RequireAuth>
+                  <Builder />
+                </RequireAuth>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
