@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { Editable } from './Editable';
 import { ImageInput } from './ImageInput';
 import { CroppedImage } from './CroppedImage';
 import { ImageCropEditor } from './ImageCropEditor';
 import { LinkEditor } from './LinkEditor';
 import { Button } from './ui/Button';
-import { newBlockId, type PageBlock, type PageBlockType } from '../data/siteData';
+import { newBlockId, type CustomPage, type PageBlock, type PageBlockType } from '../data/siteData';
 
 const BLOCK_LABEL: Record<PageBlockType, string> = {
   heading: 'Heading',
@@ -60,6 +62,97 @@ function SizePicker({ value, onChange }: { value: 'sm' | 'md' | 'lg' | 'xl'; onC
   );
 }
 
+/**
+ * The "+ Add block" trigger and its dropdown. The dropdown is portaled to
+ * document.body with fixed positioning (computed from the trigger's rect)
+ * so it always escapes any scrollable ancestor — a modal's overflow:auto
+ * content area would otherwise clip an absolutely-positioned dropdown,
+ * silently hiding the menu items.
+ */
+function AddBlockMenu({ onAdd }: { onAdd: (type: PageBlockType) => void }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  function toggle() {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 6, left: r.left });
+    }
+    setOpen((o) => !o);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    // Scroll position can change (page or an ancestor modal) while the menu
+    // is open; rather than tracking it live, just close so it never drifts.
+    const close = () => setOpen(false);
+    document.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [open]);
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <Button ref={btnRef} variant="ghost" size="sm" onClick={toggle}>
+        + Add block
+      </Button>
+      {open &&
+        pos &&
+        createPortal(
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              left: pos.left,
+              zIndex: 300,
+              background: 'var(--surface-glass)',
+              backdropFilter: 'var(--blur-glass)',
+              WebkitBackdropFilter: 'var(--blur-glass)',
+              border: '1px solid var(--border-default)',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: 6,
+              display: 'flex',
+              flexDirection: 'column',
+              minWidth: 140,
+            }}
+          >
+            {(Object.keys(BLOCK_LABEL) as PageBlockType[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => {
+                  onAdd(type);
+                  setOpen(false);
+                }}
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  textAlign: 'left',
+                  padding: '8px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 13,
+                  color: 'var(--text-body)',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-card)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+              >
+                + {BLOCK_LABEL[type]}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
 function BlockControls({
   index,
   count,
@@ -100,13 +193,16 @@ export function PageBlocks({
   blocks,
   editable,
   onChange,
+  pages,
 }: {
   blocks: PageBlock[];
   editable: boolean;
   onChange?: (blocks: PageBlock[]) => void;
+  /** Existing custom pages, offered as link suggestions for button blocks. */
+  pages?: CustomPage[];
 }) {
   const [adjustingId, setAdjustingId] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   function update(id: string, patch: Partial<PageBlock>) {
     onChange?.(blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
@@ -127,7 +223,6 @@ export function PageBlocks({
 
   function addBlock(type: PageBlockType) {
     onChange?.([...blocks, newBlock(type)]);
-    setMenuOpen(false);
   }
 
   if (!editable && blocks.length === 0) return null;
@@ -227,13 +322,13 @@ export function PageBlocks({
                     style={{ fontSize: 14, fontWeight: 600, padding: '11px 22px', borderRadius: 'var(--radius-pill)', background: 'var(--accent-primary)', color: '#fff' }}
                   />
                   <div style={{ maxWidth: 320 }}>
-                    <LinkEditor value={b.link ?? { type: 'none' }} onChange={(link) => update(b.id, { link })} />
+                    <LinkEditor value={b.link ?? { type: 'none' }} onChange={(link) => update(b.id, { link })} pages={pages} />
                   </div>
                 </>
               ) : (
                 <Button variant="primary" onClick={() => {
                   if (b.link?.type === 'external' && b.link.url) window.open(b.link.url, '_blank', 'noopener,noreferrer');
-                  else if (b.link?.type === 'internal' && b.link.slug) window.location.assign(`/mywork/${b.link.slug}`);
+                  else if (b.link?.type === 'internal' && b.link.slug) navigate(`/mywork/${b.link.slug}`);
                 }}>
                   {b.label || 'Button'}
                 </Button>
@@ -245,55 +340,7 @@ export function PageBlocks({
         </div>
       ))}
 
-      {editable && (
-        <div style={{ position: 'relative' }}>
-          <Button variant="ghost" size="sm" onClick={() => setMenuOpen((o) => !o)}>
-            + Add block
-          </Button>
-          {menuOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '110%',
-                left: 0,
-                zIndex: 5,
-                background: 'var(--surface-glass)',
-                backdropFilter: 'var(--blur-glass)',
-                WebkitBackdropFilter: 'var(--blur-glass)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-md)',
-                boxShadow: 'var(--shadow-lg)',
-                padding: 6,
-                display: 'flex',
-                flexDirection: 'column',
-                minWidth: 140,
-              }}
-            >
-              {(Object.keys(BLOCK_LABEL) as PageBlockType[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => addBlock(type)}
-                  style={{
-                    border: 'none',
-                    background: 'none',
-                    textAlign: 'left',
-                    padding: '8px 10px',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 13,
-                    color: 'var(--text-body)',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-body)',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-card)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-                >
-                  + {BLOCK_LABEL[type]}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {editable && <AddBlockMenu onAdd={addBlock} />}
     </div>
   );
 }

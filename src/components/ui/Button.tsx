@@ -1,4 +1,4 @@
-import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -17,7 +17,10 @@ const VARIANTS: Record<ButtonVariant, { background: string; color: string; borde
   ghost: { background: 'transparent', color: 'var(--text-body)', border: '1px solid var(--border-strong)' },
 };
 
-export function Button({ variant = 'primary', size = 'md', disabled, children, ...rest }: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant = 'primary', size = 'md', disabled, children, ...rest },
+  ref,
+) {
   const [hover, setHover] = useState(false);
   const pad = size === 'sm' ? '8px 16px' : size === 'lg' ? '14px 28px' : '11px 22px';
   const fontSize = size === 'sm' ? '13px' : size === 'lg' ? '16px' : '14px';
@@ -25,6 +28,7 @@ export function Button({ variant = 'primary', size = 'md', disabled, children, .
   return (
     <button
       {...rest}
+      ref={ref}
       disabled={disabled}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -38,6 +42,7 @@ export function Button({ variant = 'primary', size = 'md', disabled, children, .
         borderRadius: 'var(--radius-pill)',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
+        whiteSpace: 'nowrap',
         transform: hover && !disabled ? 'scale(1.05)' : 'scale(1)',
         boxShadow: hover && !disabled ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
         transition:
@@ -48,4 +53,4 @@ export function Button({ variant = 'primary', size = 'md', disabled, children, .
       {children}
     </button>
   );
-}
+});

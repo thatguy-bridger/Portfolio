@@ -6,6 +6,7 @@ import { PageContent } from '../sections/PageContent';
 import { About } from '../sections/About';
 import { Contact } from '../sections/Contact';
 import { CustomizePanel } from '../components/CustomizePanel';
+import { PagesManager } from '../components/PagesManager';
 import { Button } from '../components/ui/Button';
 import type { SiteData } from '../data/siteData';
 import { getDraft, getPublished, publishDraft, saveDraft } from '../firebase/site';
@@ -22,6 +23,7 @@ export function Builder() {
   const [status, setStatus] = useState<SaveStatus>('loading');
   const [publishedJson, setPublishedJson] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [pagesOpen, setPagesOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSave = useRef(true);
 
@@ -115,6 +117,7 @@ export function Builder() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 16,
           padding: '10px 20px',
           background: 'var(--surface-glass)',
           backdropFilter: 'var(--blur-glass)',
@@ -122,16 +125,17 @@ export function Builder() {
           borderBottom: '1px solid var(--border-default)',
           fontFamily: 'var(--font-body)',
           fontSize: 13,
+          overflowX: 'auto',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <strong style={{ color: 'var(--text-heading)' }}>Builder</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <strong style={{ color: 'var(--text-heading)', whiteSpace: 'nowrap' }}>Builder</strong>
           <SaveIndicator status={status} />
           {hasUnpublished && !publishing && (
-            <span style={{ color: 'var(--orange-500)', fontWeight: 600 }}>Unpublished changes</span>
+            <span style={{ color: 'var(--orange-500)', fontWeight: 600, whiteSpace: 'nowrap' }}>Unpublished changes</span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
           <Button
             variant="ghost"
             size="sm"
@@ -139,7 +143,10 @@ export function Builder() {
           >
             Edit page
           </Button>
-          <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
+          <Button variant="ghost" size="sm" onClick={() => setPagesOpen(true)}>
+            Pages{data.pages.length > 0 ? ` (${data.pages.length})` : ''}
+          </Button>
+          <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             View live site
           </Link>
           <Button variant="primary" size="sm" onClick={handlePublish} disabled={publishing || !hasUnpublished}>
@@ -155,16 +162,22 @@ export function Builder() {
         <Hero hero={data.hero} editable onChange={(hero) => setData({ ...data, hero })} />
         <WorkGrid
           tiles={data.tiles}
-          projectPages={data.projectPages}
+          pages={data.pages}
           editable
           onChange={(tiles) => setData({ ...data, tiles })}
-          onProjectPagesChange={(projectPages) => setData({ ...data, projectPages })}
+          onPagesChange={(pages) => setData({ ...data, pages })}
         />
-        <PageContent blocks={data.blocks} editable onChange={(blocks) => setData({ ...data, blocks })} />
+        <PageContent blocks={data.blocks} editable pages={data.pages} onChange={(blocks) => setData({ ...data, blocks })} />
         <About about={data.about} editable onChange={(about) => setData({ ...data, about })} />
         <Contact contact={data.contact} editable onChange={(contact) => setData({ ...data, contact })} />
       </div>
       <CustomizePanel />
+      <PagesManager
+        open={pagesOpen}
+        onClose={() => setPagesOpen(false)}
+        pages={data.pages}
+        onChange={(pages) => setData({ ...data, pages })}
+      />
     </>
   );
 }

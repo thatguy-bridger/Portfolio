@@ -3,11 +3,12 @@ import { Modal } from './ui/Modal';
 import { Input } from './ui/Input';
 import { TileElements } from './TileElements';
 import { LinkEditor } from './LinkEditor';
-import type { ProjectPage, SiteTile } from '../data/siteData';
+import { PageBlocks } from './PageBlocks';
+import { newPageId, type CustomPage, type SiteTile } from '../data/siteData';
 
-function upsertPage(pages: ProjectPage[], slug: string, patch: Partial<ProjectPage>): ProjectPage[] {
+function upsertPage(pages: CustomPage[], slug: string, patch: Partial<CustomPage>): CustomPage[] {
   const idx = pages.findIndex((p) => p.slug === slug);
-  if (idx === -1) return [...pages, { slug, title: slug, elements: [], ...patch }];
+  if (idx === -1) return [...pages, { id: newPageId(), slug, title: slug, blocks: [], ...patch }];
   return pages.map((p, i) => (i === idx ? { ...p, ...patch } : p));
 }
 
@@ -27,38 +28,43 @@ export function EditCardModal({
   onClose,
   tile,
   onChangeTile,
-  projectPages,
-  onChangeProjectPages,
+  pages,
+  onChangePages,
 }: {
   open: boolean;
   onClose: () => void;
   tile: SiteTile;
   onChangeTile: (patch: Partial<SiteTile>) => void;
-  projectPages: ProjectPage[];
-  onChangeProjectPages: (pages: ProjectPage[]) => void;
+  pages: CustomPage[];
+  onChangePages: (pages: CustomPage[]) => void;
 }) {
   const slug = tile.link.type === 'internal' ? tile.link.slug : undefined;
-  const page = slug ? (projectPages.find((p) => p.slug === slug) ?? { slug, title: tile.title, elements: [] }) : null;
+  const page = slug ? pages.find((p) => p.slug === slug) : null;
 
   return (
-    <Modal open={open} title="Edit card" onClose={onClose}>
+    <Modal open={open} title="Edit card" onClose={onClose} size={slug ? 'lg' : 'md'}>
       <Section label="Card content">
         <TileElements elements={tile.elements} editable onChange={(elements) => onChangeTile({ elements })} />
       </Section>
 
       <Section label="Link">
-        <LinkEditor value={tile.link} onChange={(link) => onChangeTile({ link })} />
+        <LinkEditor value={tile.link} onChange={(link) => onChangeTile({ link })} pages={pages} />
       </Section>
 
-      {page && slug && (
+      {slug && (
         <Section label="Page content">
-          <Input label="Page title" value={page.title} onChange={(e) => onChangeProjectPages(upsertPage(projectPages, slug, { title: e.target.value }))} />
-          <TileElements
-            elements={page.elements}
-            editable
-            onChange={(elements) => onChangeProjectPages(upsertPage(projectPages, slug, { elements }))}
+          <Input
+            label="Page title"
+            value={page?.title ?? slug}
+            onChange={(e) => onChangePages(upsertPage(pages, slug, { title: e.target.value }))}
           />
-          <Link to={`/mywork/${slug}`} target="_blank" style={{ fontSize: 12, color: 'var(--accent-primary)' }}>
+          <PageBlocks
+            blocks={page?.blocks ?? []}
+            editable
+            pages={pages}
+            onChange={(blocks) => onChangePages(upsertPage(pages, slug, { blocks }))}
+          />
+          <Link to={`/mywork/${slug}`} target="_blank" style={{ fontSize: 12, color: 'var(--accent-primary)', display: 'inline-block', marginTop: 12 }}>
             Preview page ↗
           </Link>
         </Section>

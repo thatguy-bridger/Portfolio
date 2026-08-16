@@ -5,7 +5,7 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function Input({ label, type = 'text', onChange, ...rest }: InputProps) {
+export function Input({ label, type = 'text', onChange, onFocus, onBlur, ...rest }: InputProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontFamily: 'var(--font-body)' }}>
       {label && <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-body)' }}>{label}</label>}
@@ -27,10 +27,12 @@ export function Input({ label, type = 'text', onChange, ...rest }: InputProps) {
         onFocus={(e) => {
           e.target.style.borderColor = 'var(--accent-primary)';
           e.target.style.boxShadow = '0 0 0 2px var(--shadow-glow-indigo)';
+          onFocus?.(e);
         }}
         onBlur={(e) => {
           e.target.style.borderColor = 'var(--border-default)';
           e.target.style.boxShadow = 'none';
+          onBlur?.(e);
         }}
       />
     </div>

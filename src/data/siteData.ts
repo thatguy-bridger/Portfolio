@@ -43,12 +43,6 @@ export interface SiteTile {
   link: TileLink;
 }
 
-export interface ProjectPage {
-  slug: string;
-  title: string;
-  elements: TileElement[];
-}
-
 export interface SiteSkill {
   label: string;
   color: BadgeColor;
@@ -72,6 +66,19 @@ export interface PageBlock {
   link?: TileLink;
 }
 
+/**
+ * A standalone, freely-creatable page — its own URL under /mywork/<slug>,
+ * edited with the same endless block editor as the main page-content
+ * section. A work tile can point its link at one of these, but a page
+ * doesn't have to belong to any tile.
+ */
+export interface CustomPage {
+  id: string;
+  slug: string;
+  title: string;
+  blocks: PageBlock[];
+}
+
 export interface SiteData {
   hero: {
     eyebrow: string;
@@ -90,7 +97,8 @@ export interface SiteData {
     email: string;
   };
   tiles: SiteTile[];
-  projectPages: ProjectPage[];
+  /** standalone pages under /mywork/<slug>, independent of any tile */
+  pages: CustomPage[];
   /** freeform, endlessly-addable content section between Work and About */
   blocks: PageBlock[];
   accentId: string;
@@ -132,7 +140,7 @@ export const DEFAULT_SITE_DATA: SiteData = {
     { id: 'northwind', title: 'Northwind Travel', description: 'Booking flow for a boutique travel agency.', accent: 'indigo', colSpan: 2, rowSpan: 1, elements: [], link: { type: 'none' } },
     { id: 'kiln', title: 'Kiln', description: 'Ceramics studio storefront + class booking.', accent: 'orange', colSpan: 1, rowSpan: 1, elements: [], link: { type: 'none' } },
   ],
-  projectPages: [],
+  pages: [],
   blocks: [],
   accentId: 'indigo',
   customAccentHex: '#6366f1',
@@ -152,10 +160,24 @@ export function newBlockId() {
   return `blk-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+export function newPageId() {
+  return `page-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+/** Ensures a slug is non-empty and doesn't collide with an existing page. */
+export function uniqueSlug(base: string, existing: CustomPage[], ignoreId?: string): string {
+  const clean = slugify(base) || 'page';
+  const taken = new Set(existing.filter((p) => p.id !== ignoreId).map((p) => p.slug));
+  if (!taken.has(clean)) return clean;
+  let i = 2;
+  while (taken.has(`${clean}-${i}`)) i++;
+  return `${clean}-${i}`;
 }

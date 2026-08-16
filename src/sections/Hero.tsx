@@ -92,7 +92,7 @@ export function Hero({
           onCommit={(v) => patch('subtitle', v)}
           style={{ fontSize: 18, color: 'var(--text-body)', margin: '20px auto 0', maxWidth: 520, lineHeight: 1.6, fontFamily: 'var(--font-body)' }}
         />
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 32 }}>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 32 }}>
           <Button variant="primary" size="lg" onClick={() => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })}>
             See my work
           </Button>

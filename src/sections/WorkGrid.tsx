@@ -6,25 +6,46 @@ import { Editable } from '../components/Editable';
 import { TileElements } from '../components/TileElements';
 import { EditCardModal } from '../components/EditCardModal';
 import { useReveal } from '../design-system/useReveal';
-import { newTileId, type ProjectPage, type SiteTile } from '../data/siteData';
+import { newTileId, type CustomPage, type SiteTile } from '../data/siteData';
 
 const ACCENT_CYCLE: SiteTile['accent'][] = ['indigo', 'purple', 'orange', 'pink'];
 
 function ProjectTile({
   tile,
   editable,
+  index,
+  count,
   onChange,
   onRemove,
   onEdit,
+  onMove,
 }: {
   tile: SiteTile;
   editable: boolean;
+  index: number;
+  count: number;
   onChange: (next: Partial<SiteTile>) => void;
   onRemove: () => void;
   onEdit: () => void;
+  onMove: (dir: -1 | 1) => void;
 }) {
+  // Very short (1-row) tiles can't fit an icon + title + full description
+  // without either overflowing or sitting under the edit/remove buttons —
+  // trim to what actually fits instead of letting content collide with them.
+  const compact = tile.rowSpan <= 1;
+
   const body = (
-    <div style={{ padding: 20, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', position: 'relative', overflow: 'auto' }}>
+    <div
+      style={{
+        padding: editable ? '34px 20px' : '20px',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        position: 'relative',
+        overflow: 'auto',
+      }}
+    >
       {editable && (
         <>
           <button
@@ -65,24 +86,82 @@ function ProjectTile({
           >
             ✎
           </button>
+          <div style={{ position: 'absolute', bottom: 8, left: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onMove(-1); }}
+              disabled={index === 0}
+              title="Move earlier"
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'var(--surface-card)',
+                color: 'var(--text-body)',
+                fontSize: 9,
+                lineHeight: 1,
+                cursor: index === 0 ? 'default' : 'pointer',
+                opacity: index === 0 ? 0.4 : 1,
+              }}
+            >
+              ↑
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onMove(1); }}
+              disabled={index === count - 1}
+              title="Move later"
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'var(--surface-card)',
+                color: 'var(--text-body)',
+                fontSize: 9,
+                lineHeight: 1,
+                cursor: index === count - 1 ? 'default' : 'pointer',
+                opacity: index === count - 1 ? 0.4 : 1,
+              }}
+            >
+              ↓
+            </button>
+          </div>
         </>
       )}
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: `var(--${tile.accent}-500)`, marginBottom: 12, opacity: 0.9, flexShrink: 0 }} />
+      {!compact && (
+        <div style={{ width: 32, height: 32, borderRadius: 9, background: `var(--${tile.accent}-500)`, marginBottom: 10, opacity: 0.9, flexShrink: 0 }} />
+      )}
       <Editable
         editable={editable}
         as="h3"
         value={tile.title}
         onCommit={(v) => onChange({ title: v })}
-        style={{ margin: '0 0 4px', fontSize: 17, fontWeight: 700, color: 'var(--text-heading)' }}
+        style={{
+          margin: '0 0 4px',
+          fontSize: 17,
+          fontWeight: 700,
+          color: 'var(--text-heading)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
       />
       <Editable
         editable={editable}
         as="p"
         value={tile.description}
         onCommit={(v) => onChange({ description: v })}
-        style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}
+        style={{
+          margin: 0,
+          fontSize: 13,
+          color: 'var(--text-muted)',
+          display: '-webkit-box',
+          WebkitLineClamp: compact ? 1 : 3,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}
       />
-      {tile.elements.length > 0 && (
+      {!compact && tile.elements.length > 0 && (
         <div style={{ marginTop: 10 }}>
           <TileElements elements={tile.elements} editable={false} />
         </div>
@@ -109,16 +188,16 @@ function ProjectTile({
 
 export function WorkGrid({
   tiles,
-  projectPages,
+  pages,
   editable = false,
   onChange,
-  onProjectPagesChange,
+  onPagesChange,
 }: {
   tiles: SiteTile[];
-  projectPages?: ProjectPage[];
+  pages?: CustomPage[];
   editable?: boolean;
   onChange?: (tiles: SiteTile[]) => void;
-  onProjectPagesChange?: (pages: ProjectPage[]) => void;
+  onPagesChange?: (pages: CustomPage[]) => void;
 }) {
   const { ref, visible } = useReveal<HTMLDivElement>();
   const [editingTileId, setEditingTileId] = useState<string | null>(null);
@@ -131,6 +210,15 @@ export function WorkGrid({
   function removeTile(id: string) {
     onChange?.(tiles.filter((t) => t.id !== id));
     if (editingTileId === id) setEditingTileId(null);
+  }
+
+  function moveTile(id: string, dir: -1 | 1) {
+    const idx = tiles.findIndex((t) => t.id === id);
+    const target = idx + dir;
+    if (idx === -1 || target < 0 || target >= tiles.length) return;
+    const next = [...tiles];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange?.(next);
   }
 
   function addTile() {
@@ -148,7 +236,7 @@ export function WorkGrid({
     onChange?.([...tiles, next]);
   }
 
-  const bentoTiles: BentoTile[] = tiles.map((t) => ({
+  const bentoTiles: BentoTile[] = tiles.map((t, i) => ({
     id: t.id,
     colSpan: t.colSpan,
     rowSpan: t.rowSpan,
@@ -156,9 +244,12 @@ export function WorkGrid({
       <ProjectTile
         tile={t}
         editable={editable}
+        index={i}
+        count={tiles.length}
         onChange={(patch) => updateTile(t.id, patch)}
         onRemove={() => removeTile(t.id)}
         onEdit={() => setEditingTileId(t.id)}
+        onMove={(dir) => moveTile(t.id, dir)}
       />
     ),
   }));
@@ -193,8 +284,8 @@ export function WorkGrid({
           onClose={() => setEditingTileId(null)}
           tile={editingTile}
           onChangeTile={(patch) => updateTile(editingTile.id, patch)}
-          projectPages={projectPages ?? []}
-          onChangeProjectPages={(pages) => onProjectPagesChange?.(pages)}
+          pages={pages ?? []}
+          onChangePages={(next) => onPagesChange?.(next)}
         />
       )}
     </section>

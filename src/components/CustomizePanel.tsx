@@ -36,7 +36,7 @@ export function CustomizePanel() {
           <div>
             <h4 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: 'var(--text-heading)' }}>Customize</h4>
             <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>
-              A live preview of the builder's per-portfolio styling controls.
+              Appearance, accent color, and fonts — saved with your site.
             </p>
           </div>
 
