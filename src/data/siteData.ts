@@ -41,6 +41,9 @@ export interface SiteTile {
   accent: GlassCardAccent;
   colSpan: number;
   rowSpan: number;
+  /** freeform position, in fine grid units (finer than colSpan/rowSpan's cell size) — undefined until the tile is first dragged, auto-packed until then */
+  x?: number;
+  y?: number;
   /** extra content blocks shown on the card face, below title/description */
   elements: TileElement[];
   link: TileLink;
@@ -53,6 +56,20 @@ export interface SiteSkill {
 
 export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider';
 
+/** Per-block text styling — overrides the site-wide font for just this one heading/text block. */
+export interface TextEffects {
+  /** a FontDef id from design-system/fonts.ts; unset = inherit the site's display/body font */
+  fontId?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  /** any CSS color, e.g. a hex string; unset = inherit the normal heading/body color */
+  color?: string;
+  /** extra letter-spacing in px, can be negative */
+  letterSpacing?: number;
+  shadow?: boolean;
+}
+
 export interface PageBlock {
   id: string;
   type: PageBlockType;
@@ -60,6 +77,8 @@ export interface PageBlock {
   content?: string;
   /** heading/text size */
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** heading/text per-block font + effects */
+  textEffects?: TextEffects;
   /** image */
   src?: string;
   alt?: string;

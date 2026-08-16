@@ -238,6 +238,8 @@ export function WorkGrid({
     id: t.id,
     colSpan: t.colSpan,
     rowSpan: t.rowSpan,
+    x: t.x,
+    y: t.y,
     content: (
       <ProjectTile
         tile={t}
@@ -270,11 +272,7 @@ export function WorkGrid({
             </div>
           )}
         </div>
-        <BentoGrid
-          tiles={bentoTiles}
-          editable={editable && arranging}
-          onChange={(id, colSpan, rowSpan) => updateTile(id, { colSpan, rowSpan })}
-        />
+        <BentoGrid tiles={bentoTiles} editable={editable && arranging} onChange={(id, patch) => updateTile(id, patch)} />
       </div>
       {editingTile && (
         <EditCardModal

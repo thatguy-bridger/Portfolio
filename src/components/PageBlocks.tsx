@@ -6,7 +6,10 @@ import { ImageInput } from './ImageInput';
 import { CroppedImage } from './CroppedImage';
 import { ImageCropEditor } from './ImageCropEditor';
 import { LinkEditor } from './LinkEditor';
+import { TextStylePopover, effectsToStyle } from './TextStylePopover';
 import { Button } from './ui/Button';
+import { FONT_LIBRARY, loadFont } from '../design-system/fonts';
+import { useClickAway } from '../design-system/useClickAway';
 import { newBlockId, type CustomPage, type PageBlock, type PageBlockType } from '../data/siteData';
 
 const BLOCK_LABEL: Record<PageBlockType, string> = {
@@ -73,6 +76,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: PageBlockType) => void }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   function toggle() {
     if (!open && btnRef.current) {
@@ -82,11 +86,13 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: PageBlockType) => void }) {
     setOpen((o) => !o);
   }
 
+  const close = () => setOpen(false);
+  useClickAway(open, [btnRef, panelRef], close);
+
   useEffect(() => {
     if (!open) return;
     // Scroll position can change (page or an ancestor modal) while the menu
     // is open; rather than tracking it live, just close so it never drifts.
-    const close = () => setOpen(false);
     document.addEventListener('scroll', close, true);
     window.addEventListener('resize', close);
     return () => {
@@ -104,6 +110,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: PageBlockType) => void }) {
         pos &&
         createPortal(
           <div
+            ref={panelRef}
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
@@ -204,6 +211,17 @@ export function PageBlocks({
   const [adjustingId, setAdjustingId] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Any block using a per-block font override needs that font's stylesheet loaded,
+  // for readers too — not just while editing.
+  useEffect(() => {
+    for (const b of blocks) {
+      const fontId = b.textEffects?.fontId;
+      if (!fontId) continue;
+      const font = FONT_LIBRARY.find((f) => f.id === fontId);
+      if (font) loadFont(font);
+    }
+  }, [blocks]);
+
   function update(id: string, patch: Partial<PageBlock>) {
     onChange?.(blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   }
@@ -235,27 +253,44 @@ export function PageBlocks({
 
           {b.type === 'heading' && (
             <div>
-              {editable && <SizePicker value={b.size ?? 'lg'} onChange={(size) => update(b.id, { size })} />}
+              {editable && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <SizePicker value={b.size ?? 'lg'} onChange={(size) => update(b.id, { size })} />
+                  <TextStylePopover value={b.textEffects} onChange={(textEffects) => update(b.id, { textEffects })} />
+                </div>
+              )}
               <Editable
                 editable={editable}
                 as="h2"
                 value={b.content ?? ''}
                 onCommit={(v) => update(b.id, { content: v })}
-                style={{ fontSize: SIZE_PX[b.size ?? 'lg'], fontWeight: 700, color: 'var(--text-heading)' }}
+                style={{ fontSize: SIZE_PX[b.size ?? 'lg'], fontWeight: 700, color: 'var(--text-heading)', ...effectsToStyle(b.textEffects) }}
               />
             </div>
           )}
 
           {b.type === 'text' && (
             <div>
-              {editable && <SizePicker value={b.size ?? 'md'} onChange={(size) => update(b.id, { size })} />}
+              {editable && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <SizePicker value={b.size ?? 'md'} onChange={(size) => update(b.id, { size })} />
+                  <TextStylePopover value={b.textEffects} onChange={(textEffects) => update(b.id, { textEffects })} />
+                </div>
+              )}
               <Editable
                 editable={editable}
                 as="p"
                 multiline
                 value={b.content ?? ''}
                 onCommit={(v) => update(b.id, { content: v })}
-                style={{ fontSize: SIZE_PX[b.size ?? 'md'] * 0.7 + 6, lineHeight: 1.6, color: 'var(--text-body)', fontFamily: 'var(--font-body)', margin: 0 }}
+                style={{
+                  fontSize: SIZE_PX[b.size ?? 'md'] * 0.7 + 6,
+                  lineHeight: 1.6,
+                  color: 'var(--text-body)',
+                  fontFamily: 'var(--font-body)',
+                  margin: 0,
+                  ...effectsToStyle(b.textEffects),
+                }}
               />
             </div>
           )}
