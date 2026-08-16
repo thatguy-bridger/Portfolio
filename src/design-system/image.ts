@@ -1,10 +1,9 @@
 /**
- * Reads an image file and downscales/recompresses it client-side into a data
- * URL. There's no backend storage in this app (Firebase Storage requires a
- * paid plan) — images live inline in the Firestore document, so keeping
- * them small matters.
+ * Reads an image file and downscales/recompresses it client-side into a
+ * JPEG blob before upload — keeps uploads fast and storage usage sane
+ * without needing the user to resize photos themselves.
  */
-export function compressImageFile(file: File, maxDim = 900, quality = 0.75): Promise<string> {
+export function compressImageToBlob(file: File, maxDim = 1600, quality = 0.82): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error);
@@ -27,7 +26,11 @@ export function compressImageFile(file: File, maxDim = 900, quality = 0.75): Pro
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error('Could not encode image'))),
+          'image/jpeg',
+          quality,
+        );
       };
       img.src = reader.result as string;
     };

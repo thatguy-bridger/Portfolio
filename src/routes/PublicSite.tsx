@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ScrollProgress } from '../components/ScrollProgress';
 import { Hero } from '../sections/Hero';
 import { WorkGrid } from '../sections/WorkGrid';
+import { PageContent } from '../sections/PageContent';
 import { About } from '../sections/About';
 import { Contact } from '../sections/Contact';
 import { DEFAULT_SITE_DATA, type SiteData } from '../data/siteData';
@@ -10,13 +11,6 @@ import { isFirebaseConfigured } from '../firebase/client';
 import { subscribePublished } from '../firebase/site';
 import { useApplyThemeFromData } from '../design-system/useApplyThemeFromData';
 import { useAuth } from '../auth/AuthProvider';
-
-const SECTIONS = [
-  { id: 'hero', label: 'Intro' },
-  { id: 'work', label: 'Work' },
-  { id: 'about', label: 'About' },
-  { id: 'contact', label: 'Contact' },
-];
 
 export function PublicSite() {
   const [data, setData] = useState<SiteData>(DEFAULT_SITE_DATA);
@@ -32,12 +26,21 @@ export function PublicSite() {
 
   useApplyThemeFromData(data);
 
+  const sections = [
+    { id: 'hero', label: 'Intro' },
+    { id: 'work', label: 'Work' },
+    ...(data.blocks.length > 0 ? [{ id: 'content', label: 'More' }] : []),
+    { id: 'about', label: 'About' },
+    { id: 'contact', label: 'Contact' },
+  ];
+
   return (
     <>
-      <ScrollProgress sections={SECTIONS} />
+      <ScrollProgress sections={sections} />
       <main>
         <Hero hero={data.hero} />
         <WorkGrid tiles={data.tiles} />
+        <PageContent blocks={data.blocks} />
         <About about={data.about} />
         <Contact contact={data.contact} />
       </main>

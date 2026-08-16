@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { Editable } from './Editable';
 import { ImageInput } from './ImageInput';
+import { CroppedImage } from './CroppedImage';
+import { ImageCropEditor } from './ImageCropEditor';
 import { newElementId, type TileElement } from '../data/siteData';
 
 /**
@@ -17,12 +20,15 @@ export function TileElements({
   editable: boolean;
   onChange?: (elements: TileElement[]) => void;
 }) {
+  const [adjustingId, setAdjustingId] = useState<string | null>(null);
+
   function updateEl(id: string, patch: Partial<TileElement>) {
     onChange?.(elements.map((e) => (e.id === id ? { ...e, ...patch } : e)));
   }
 
   function removeEl(id: string) {
     onChange?.(elements.filter((e) => e.id !== id));
+    if (adjustingId === id) setAdjustingId(null);
   }
 
   function addText() {
@@ -47,11 +53,33 @@ export function TileElements({
               style={{ margin: 0, fontSize: 14, color: 'var(--text-body)', fontFamily: 'var(--font-body)' }}
             />
           ) : (
-            <img
-              src={el.src}
-              alt={el.alt ?? ''}
-              style={{ width: '100%', display: 'block', borderRadius: 'var(--radius-md)' }}
-            />
+            <div>
+              <CroppedImage src={el.src} alt={el.alt} crop={el.crop} />
+              {editable && (
+                <button
+                  type="button"
+                  onClick={() => setAdjustingId(adjustingId === el.id ? null : el.id)}
+                  style={{
+                    marginTop: 6,
+                    border: 'none',
+                    borderRadius: 'var(--radius-pill)',
+                    padding: '3px 12px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: 'var(--surface-card)',
+                    color: 'var(--text-body)',
+                  }}
+                >
+                  {adjustingId === el.id ? 'Done adjusting' : '⤢ Adjust photo'}
+                </button>
+              )}
+              {editable && adjustingId === el.id && el.src && (
+                <div style={{ marginTop: 8 }}>
+                  <ImageCropEditor src={el.src} crop={el.crop} onChange={(crop) => updateEl(el.id, { crop })} />
+                </div>
+              )}
+            </div>
           )}
           {editable && (
             <button

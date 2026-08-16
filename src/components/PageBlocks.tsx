@@ -1,0 +1,299 @@
+import { useState } from 'react';
+import { Editable } from './Editable';
+import { ImageInput } from './ImageInput';
+import { CroppedImage } from './CroppedImage';
+import { ImageCropEditor } from './ImageCropEditor';
+import { LinkEditor } from './LinkEditor';
+import { Button } from './ui/Button';
+import { newBlockId, type PageBlock, type PageBlockType } from '../data/siteData';
+
+const BLOCK_LABEL: Record<PageBlockType, string> = {
+  heading: 'Heading',
+  text: 'Text',
+  image: 'Photo',
+  button: 'Button',
+  divider: 'Divider',
+};
+
+const SIZE_PX: Record<'sm' | 'md' | 'lg' | 'xl', number> = { sm: 16, md: 20, lg: 32, xl: 48 };
+const SIZES: Array<'sm' | 'md' | 'lg' | 'xl'> = ['sm', 'md', 'lg', 'xl'];
+
+function newBlock(type: PageBlockType): PageBlock {
+  const base = { id: newBlockId(), type };
+  switch (type) {
+    case 'heading':
+      return { ...base, content: 'New heading', size: 'lg' };
+    case 'text':
+      return { ...base, content: 'Write something here.', size: 'md' };
+    case 'image':
+      return { ...base, alt: '' };
+    case 'button':
+      return { ...base, label: 'Click me', link: { type: 'none' } };
+    case 'divider':
+      return base;
+  }
+}
+
+function SizePicker({ value, onChange }: { value: 'sm' | 'md' | 'lg' | 'xl'; onChange: (s: 'sm' | 'md' | 'lg' | 'xl') => void }) {
+  return (
+    <div style={{ display: 'inline-flex', gap: 2, marginBottom: 6 }}>
+      {SIZES.map((s) => (
+        <button
+          key={s}
+          onClick={() => onChange(s)}
+          style={{
+            border: 'none',
+            borderRadius: 4,
+            padding: '2px 8px',
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            background: value === s ? 'var(--accent-primary)' : 'var(--surface-card)',
+            color: value === s ? '#fff' : 'var(--text-muted)',
+          }}
+        >
+          {s}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function BlockControls({
+  index,
+  count,
+  onMove,
+  onRemove,
+}: {
+  index: number;
+  count: number;
+  onMove: (dir: -1 | 1) => void;
+  onRemove: () => void;
+}) {
+  const btn: React.CSSProperties = {
+    width: 20,
+    height: 20,
+    borderRadius: '50%',
+    border: 'none',
+    fontSize: 10,
+    cursor: 'pointer',
+    background: 'var(--surface-card)',
+    color: 'var(--text-body)',
+  };
+  return (
+    <div style={{ position: 'absolute', top: -8, right: -8, display: 'flex', gap: 4, zIndex: 2 }}>
+      <button style={btn} disabled={index === 0} onClick={() => onMove(-1)} title="Move up">
+        ↑
+      </button>
+      <button style={btn} disabled={index === count - 1} onClick={() => onMove(1)} title="Move down">
+        ↓
+      </button>
+      <button style={{ ...btn, background: 'var(--red-600)', color: '#fff' }} onClick={onRemove} title="Remove">
+        ✕
+      </button>
+    </div>
+  );
+}
+
+export function PageBlocks({
+  blocks,
+  editable,
+  onChange,
+}: {
+  blocks: PageBlock[];
+  editable: boolean;
+  onChange?: (blocks: PageBlock[]) => void;
+}) {
+  const [adjustingId, setAdjustingId] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  function update(id: string, patch: Partial<PageBlock>) {
+    onChange?.(blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+  }
+
+  function remove(id: string) {
+    onChange?.(blocks.filter((b) => b.id !== id));
+  }
+
+  function move(id: string, dir: -1 | 1) {
+    const idx = blocks.findIndex((b) => b.id === id);
+    const target = idx + dir;
+    if (target < 0 || target >= blocks.length) return;
+    const next = [...blocks];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange?.(next);
+  }
+
+  function addBlock(type: PageBlockType) {
+    onChange?.([...blocks, newBlock(type)]);
+    setMenuOpen(false);
+  }
+
+  if (!editable && blocks.length === 0) return null;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      {blocks.map((b, i) => (
+        <div key={b.id} style={{ position: 'relative' }}>
+          {editable && <BlockControls index={i} count={blocks.length} onMove={(dir) => move(b.id, dir)} onRemove={() => remove(b.id)} />}
+
+          {b.type === 'heading' && (
+            <div>
+              {editable && <SizePicker value={b.size ?? 'lg'} onChange={(size) => update(b.id, { size })} />}
+              <Editable
+                editable={editable}
+                as="h2"
+                value={b.content ?? ''}
+                onCommit={(v) => update(b.id, { content: v })}
+                style={{ fontSize: SIZE_PX[b.size ?? 'lg'], fontWeight: 700, color: 'var(--text-heading)' }}
+              />
+            </div>
+          )}
+
+          {b.type === 'text' && (
+            <div>
+              {editable && <SizePicker value={b.size ?? 'md'} onChange={(size) => update(b.id, { size })} />}
+              <Editable
+                editable={editable}
+                as="p"
+                multiline
+                value={b.content ?? ''}
+                onCommit={(v) => update(b.id, { content: v })}
+                style={{ fontSize: SIZE_PX[b.size ?? 'md'] * 0.7 + 6, lineHeight: 1.6, color: 'var(--text-body)', fontFamily: 'var(--font-body)', margin: 0 }}
+              />
+            </div>
+          )}
+
+          {b.type === 'image' && (
+            <div>
+              {b.src ? (
+                <CroppedImage src={b.src} alt={b.alt} crop={b.crop} aspect="16 / 9" />
+              ) : editable ? (
+                <div
+                  style={{
+                    aspectRatio: '16 / 9',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px dashed var(--border-strong)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-muted)',
+                    fontSize: 13,
+                  }}
+                >
+                  No photo yet
+                </div>
+              ) : null}
+              {editable && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <ImageInput label={b.src ? 'Replace photo' : '+ Photo'} onSelect={(src) => update(b.id, { src, crop: undefined })} />
+                  {b.src && (
+                    <button
+                      type="button"
+                      onClick={() => setAdjustingId(adjustingId === b.id ? null : b.id)}
+                      style={{
+                        border: 'none',
+                        borderRadius: 'var(--radius-pill)',
+                        padding: '3px 12px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: 'var(--surface-card)',
+                        color: 'var(--text-body)',
+                      }}
+                    >
+                      {adjustingId === b.id ? 'Done adjusting' : '⤢ Adjust photo'}
+                    </button>
+                  )}
+                </div>
+              )}
+              {editable && adjustingId === b.id && b.src && (
+                <div style={{ marginTop: 8 }}>
+                  <ImageCropEditor src={b.src} crop={b.crop} onChange={(crop) => update(b.id, { crop })} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {b.type === 'button' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+              {editable ? (
+                <>
+                  <Editable
+                    editable
+                    value={b.label ?? ''}
+                    onCommit={(v) => update(b.id, { label: v })}
+                    style={{ fontSize: 14, fontWeight: 600, padding: '11px 22px', borderRadius: 'var(--radius-pill)', background: 'var(--accent-primary)', color: '#fff' }}
+                  />
+                  <div style={{ maxWidth: 320 }}>
+                    <LinkEditor value={b.link ?? { type: 'none' }} onChange={(link) => update(b.id, { link })} />
+                  </div>
+                </>
+              ) : (
+                <Button variant="primary" onClick={() => {
+                  if (b.link?.type === 'external' && b.link.url) window.open(b.link.url, '_blank', 'noopener,noreferrer');
+                  else if (b.link?.type === 'internal' && b.link.slug) window.location.assign(`/mywork/${b.link.slug}`);
+                }}>
+                  {b.label || 'Button'}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {b.type === 'divider' && <hr style={{ border: 'none', borderTop: '1px solid var(--border-default)', margin: 0 }} />}
+        </div>
+      ))}
+
+      {editable && (
+        <div style={{ position: 'relative' }}>
+          <Button variant="ghost" size="sm" onClick={() => setMenuOpen((o) => !o)}>
+            + Add block
+          </Button>
+          {menuOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '110%',
+                left: 0,
+                zIndex: 5,
+                background: 'var(--surface-glass)',
+                backdropFilter: 'var(--blur-glass)',
+                WebkitBackdropFilter: 'var(--blur-glass)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-lg)',
+                padding: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 140,
+              }}
+            >
+              {(Object.keys(BLOCK_LABEL) as PageBlockType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => addBlock(type)}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 13,
+                    color: 'var(--text-body)',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-card)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                >
+                  + {BLOCK_LABEL[type]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

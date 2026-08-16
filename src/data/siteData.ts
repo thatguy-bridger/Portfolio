@@ -2,14 +2,25 @@ import type { BadgeColor } from '../components/ui/Badge';
 import type { GlassCardAccent } from '../components/ui/GlassCard';
 import { DEFAULT_BODY_FONT, DEFAULT_DISPLAY_FONT } from '../design-system/fonts';
 
+export interface ImageCrop {
+  /** 1 = fits the frame (object-fit: cover); up to ~3 to zoom in further */
+  zoom: number;
+  /** focal point, 0-100 — maps to CSS object-position / transform-origin */
+  posX: number;
+  posY: number;
+}
+
+export const DEFAULT_CROP: ImageCrop = { zoom: 1, posX: 50, posY: 50 };
+
 export interface TileElement {
   id: string;
   type: 'text' | 'image';
   /** text elements */
   content?: string;
-  /** image elements — a compressed data URL (no backend storage needed) */
+  /** image elements — a Firebase Storage download URL */
   src?: string;
   alt?: string;
+  crop?: ImageCrop;
 }
 
 export interface TileLink {
@@ -43,6 +54,24 @@ export interface SiteSkill {
   color: BadgeColor;
 }
 
+export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider';
+
+export interface PageBlock {
+  id: string;
+  type: PageBlockType;
+  /** heading/text */
+  content?: string;
+  /** heading/text size */
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** image */
+  src?: string;
+  alt?: string;
+  crop?: ImageCrop;
+  /** button */
+  label?: string;
+  link?: TileLink;
+}
+
 export interface SiteData {
   hero: {
     eyebrow: string;
@@ -62,6 +91,8 @@ export interface SiteData {
   };
   tiles: SiteTile[];
   projectPages: ProjectPage[];
+  /** freeform, endlessly-addable content section between Work and About */
+  blocks: PageBlock[];
   accentId: string;
   customAccentHex: string;
   displayFontId: string;
@@ -102,6 +133,7 @@ export const DEFAULT_SITE_DATA: SiteData = {
     { id: 'kiln', title: 'Kiln', description: 'Ceramics studio storefront + class booking.', accent: 'orange', colSpan: 1, rowSpan: 1, elements: [], link: { type: 'none' } },
   ],
   projectPages: [],
+  blocks: [],
   accentId: 'indigo',
   customAccentHex: '#6366f1',
   displayFontId: DEFAULT_DISPLAY_FONT.id,
@@ -114,6 +146,10 @@ export function newTileId() {
 
 export function newElementId() {
   return `el-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function newBlockId() {
+  return `blk-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function slugify(text: string): string {

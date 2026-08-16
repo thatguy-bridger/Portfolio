@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Hero } from '../sections/Hero';
 import { WorkGrid } from '../sections/WorkGrid';
+import { PageContent } from '../sections/PageContent';
 import { About } from '../sections/About';
 import { Contact } from '../sections/Contact';
 import { CustomizePanel } from '../components/CustomizePanel';
@@ -131,6 +132,13 @@ export function Builder() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => document.getElementById('content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          >
+            Edit page
+          </Button>
           <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
             View live site
           </Link>
@@ -152,6 +160,7 @@ export function Builder() {
           onChange={(tiles) => setData({ ...data, tiles })}
           onProjectPagesChange={(projectPages) => setData({ ...data, projectPages })}
         />
+        <PageContent blocks={data.blocks} editable onChange={(blocks) => setData({ ...data, blocks })} />
         <About about={data.about} editable onChange={(about) => setData({ ...data, about })} />
         <Contact contact={data.contact} editable onChange={(contact) => setData({ ...data, contact })} />
       </div>

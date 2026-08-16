@@ -26,7 +26,8 @@ function normalizeSiteData(raw: Record<string, unknown>): SiteData {
   const { updatedAt: _u, publishedAt: _p, ...rest } = raw;
   const tiles = Array.isArray(rest.tiles) ? (rest.tiles as Record<string, unknown>[]).map(normalizeTile) : DEFAULT_SITE_DATA.tiles;
   const projectPages = Array.isArray(rest.projectPages) ? rest.projectPages : [];
-  return { ...DEFAULT_SITE_DATA, ...rest, tiles, projectPages } as SiteData;
+  const blocks = Array.isArray(rest.blocks) ? rest.blocks : [];
+  return { ...DEFAULT_SITE_DATA, ...rest, tiles, projectPages, blocks } as SiteData;
 }
 
 export async function getDraft(): Promise<StoredSite> {
