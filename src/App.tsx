@@ -6,6 +6,7 @@ import { LoginPage } from './auth/LoginPage';
 import { PublicSite } from './routes/PublicSite';
 import { Builder } from './routes/Builder';
 import { WidgetStudio } from './routes/WidgetStudio';
+import { HomepageStudio } from './routes/HomepageStudio';
 import { Inbox } from './routes/Inbox';
 import { ProjectPage } from './routes/ProjectPage';
 
@@ -38,6 +39,14 @@ export default function App() {
               element={
                 <RequireAuth>
                   <Inbox />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/edit/homepage"
+              element={
+                <RequireAuth>
+                  <HomepageStudio />
                 </RequireAuth>
               }
             />

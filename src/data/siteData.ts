@@ -221,7 +221,7 @@ export interface CustomPage {
 }
 
 /** Routes a custom page's path can never occupy — they're the app's own static routes. */
-export const RESERVED_PATHS = new Set(['login', 'edit', 'edit/widgets', 'edit/messages']);
+export const RESERVED_PATHS = new Set(['login', 'edit', 'edit/widgets', 'edit/messages', 'edit/homepage']);
 
 /** The freeform homepage canvas is authored at this fixed design width (px); it's centered and capped at this width on wider screens. Mobile gets its own layout in a later phase — for now it falls back to a simple stacked column. */
 export const GROUP_CANVAS_WIDTH = 1200;

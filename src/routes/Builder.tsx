@@ -135,6 +135,12 @@ export function Builder() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+          <Link
+            to="/edit/homepage"
+            style={{ color: data.useFreeformHomepage ? 'var(--green-600)' : 'var(--text-muted)', fontSize: 13, fontWeight: data.useFreeformHomepage ? 700 : 400, textDecoration: 'none', whiteSpace: 'nowrap' }}
+          >
+            Homepage{data.useFreeformHomepage ? ' (freeform)' : ''}
+          </Link>
           <Link to="/edit/widgets" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             Widgets{data.widgets.length > 0 ? ` (${data.widgets.length})` : ''}
           </Link>
