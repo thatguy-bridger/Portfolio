@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Editable } from './Editable';
 import { ImageInput } from './ImageInput';
 import { Model3DInput } from './Model3DInput';
+import { VideoInput } from './VideoInput';
+import { GalleryBlockEditor, GalleryGrid } from './GalleryBlockEditor';
 import { CroppedImage } from './CroppedImage';
 import { ImageCropEditor } from './ImageCropEditor';
 import { LinkEditor } from './LinkEditor';
@@ -13,6 +15,7 @@ import { WidgetInstanceValuesForm } from './widgets/WidgetInstanceValuesForm';
 import { Button } from './ui/Button';
 import { FONT_LIBRARY, loadFont } from '../design-system/fonts';
 import { useClickAway } from '../design-system/useClickAway';
+import { parseEmbedUrl, EMBED_ASPECT } from '../design-system/embeds';
 import { newBlockId, type CustomPage, type PageBlock, type PageBlockType, type Widget } from '../data/siteData';
 
 // Three.js is a heavy dependency (the loader + renderer alone are several
@@ -28,6 +31,10 @@ const BLOCK_LABEL: Record<PageBlockType, string> = {
   divider: 'Divider',
   model3d: '3D Model',
   widget: 'Widget',
+  video: 'Video',
+  gallery: 'Gallery',
+  embed: 'Embed',
+  code: 'Custom Code',
 };
 
 const SIZE_PX: Record<'sm' | 'md' | 'lg' | 'xl', number> = { sm: 16, md: 20, lg: 32, xl: 48 };
@@ -50,6 +57,14 @@ function newBlock(type: PageBlockType): PageBlock {
       return base;
     case 'widget':
       return base;
+    case 'video':
+      return base;
+    case 'gallery':
+      return { ...base, galleryImages: [] };
+    case 'embed':
+      return base;
+    case 'code':
+      return { ...base, codeHtml: '' };
   }
 }
 
@@ -488,6 +503,141 @@ export function PageBlocks({
               </div>
             );
           })()}
+
+          {b.type === 'video' && (
+            <div>
+              {b.videoSrc ? (
+                <video src={b.videoSrc} controls style={{ width: '100%', borderRadius: 'var(--radius-md)', display: 'block', background: '#000' }} />
+              ) : editable ? (
+                <div
+                  style={{
+                    aspectRatio: '16 / 9',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px dashed var(--border-strong)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-muted)',
+                    fontSize: 13,
+                  }}
+                >
+                  No video yet
+                </div>
+              ) : null}
+              {editable && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                  <VideoInput label={b.videoSrc ? 'Replace video' : '+ Video'} onSelect={(videoSrc, videoFileName) => update(b.id, { videoSrc, videoFileName })} />
+                  {b.videoFileName && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.videoFileName}</span>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {b.type === 'gallery' &&
+            (editable ? (
+              <GalleryBlockEditor images={b.galleryImages ?? []} onChange={(galleryImages) => update(b.id, { galleryImages })} />
+            ) : (
+              <GalleryGrid images={b.galleryImages ?? []} />
+            ))}
+
+          {b.type === 'embed' &&
+            (() => {
+              const parsed = b.embedUrl ? parseEmbedUrl(b.embedUrl) : null;
+              return (
+                <div>
+                  {parsed ? (
+                    <iframe
+                      src={parsed.embedSrc}
+                      style={{ width: '100%', aspectRatio: EMBED_ASPECT[parsed.kind], border: 'none', borderRadius: 'var(--radius-md)', display: 'block' }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      loading="lazy"
+                    />
+                  ) : editable ? (
+                    <div
+                      style={{
+                        aspectRatio: '16 / 9',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px dashed var(--border-strong)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--text-muted)',
+                        fontSize: 13,
+                        textAlign: 'center',
+                        padding: 16,
+                      }}
+                    >
+                      Paste a link below to embed it
+                    </div>
+                  ) : null}
+                  {editable && (
+                    <input
+                      value={b.embedUrl ?? ''}
+                      onChange={(e) => update(b.id, { embedUrl: e.target.value })}
+                      placeholder="https://youtube.com/watch?v=… , a Maps link, or any embeddable URL"
+                      style={{
+                        marginTop: 8,
+                        width: '100%',
+                        padding: '6px 10px',
+                        borderRadius: 6,
+                        border: '1px solid var(--border-default)',
+                        background: 'var(--surface-card)',
+                        color: 'var(--text-heading)',
+                        fontSize: 13,
+                      }}
+                    />
+                  )}
+                  {editable && b.embedUrl && !parsed && (
+                    <div style={{ fontSize: 11, color: 'var(--red-500)', marginTop: 4 }}>Not a valid URL.</div>
+                  )}
+                </div>
+              );
+            })()}
+
+          {b.type === 'code' && (
+            <div>
+              {editable ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <textarea
+                    value={b.codeHtml ?? ''}
+                    onChange={(e) => update(b.id, { codeHtml: e.target.value })}
+                    placeholder="<div>Any HTML, CSS (in a <style> tag), or JS (in a <script> tag)…</div>"
+                    rows={6}
+                    style={{
+                      width: '100%',
+                      padding: 10,
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-default)',
+                      background: 'var(--surface-card)',
+                      color: 'var(--text-heading)',
+                      fontSize: 12,
+                      fontFamily: 'ui-monospace, monospace',
+                      resize: 'vertical',
+                    }}
+                  />
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    Runs sandboxed in its own frame — it can't access the rest of your site.
+                  </div>
+                  {b.codeHtml && (
+                    <iframe
+                      title="Custom code preview"
+                      srcDoc={b.codeHtml}
+                      sandbox="allow-scripts allow-popups"
+                      style={{ width: '100%', minHeight: 160, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', background: '#fff' }}
+                    />
+                  )}
+                </div>
+              ) : b.codeHtml ? (
+                <iframe
+                  title="Custom code"
+                  srcDoc={b.codeHtml}
+                  sandbox="allow-scripts allow-popups"
+                  style={{ width: '100%', minHeight: 160, border: 'none', display: 'block' }}
+                />
+              ) : null}
+            </div>
+          )}
         </div>
       ))}
 

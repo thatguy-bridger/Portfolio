@@ -54,11 +54,22 @@ export interface SiteSkill {
   color: BadgeColor;
 }
 
-export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget';
+export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget' | 'video' | 'gallery' | 'embed' | 'code';
 
 /** 3D model formats the viewer can load, by file extension. */
 export const MODEL_FORMATS = ['.glb', '.gltf', '.obj', '.fbx', '.stl', '.ply'] as const;
 export type Model3DFormat = (typeof MODEL_FORMATS)[number];
+
+/** One photo in a gallery block — same natural-size/crop model as a standalone image block. */
+export interface GalleryImage {
+  id: string;
+  src: string;
+  width?: number;
+  height?: number;
+  alt?: string;
+}
+
+export type EmbedKind = 'youtube' | 'vimeo' | 'maps' | 'twitter' | 'generic';
 
 /** Per-block text styling — overrides the site-wide font for just this one heading/text block. */
 export interface TextEffects {
@@ -101,6 +112,15 @@ export interface PageBlock {
   widgetId?: string;
   /** per-instance values for the referenced widget's "instance"-scoped variables, keyed by variable id */
   widgetValues?: Record<string, string>;
+  /** video — a Firebase Storage download URL for an uploaded file */
+  videoSrc?: string;
+  videoFileName?: string;
+  /** gallery */
+  galleryImages?: GalleryImage[];
+  /** embed — the raw URL the user pasted (a YouTube/Vimeo/Maps/etc link); the kind is detected from it */
+  embedUrl?: string;
+  /** custom code — raw HTML/CSS/JS, rendered inside a sandboxed iframe */
+  codeHtml?: string;
 }
 
 export type WidgetVariableType = 'text' | 'number' | 'color' | 'image' | 'date' | 'boolean';
@@ -119,6 +139,17 @@ export interface WidgetVariable {
   scope: WidgetVariableScope;
   /** the value for a global variable, or the fallback shown for an instance variable until it's filled in — always stored as a string (numbers/booleans/dates encoded as strings, color as hex, image as a Storage URL) */
   defaultValue: string;
+  /**
+   * Where the value comes from. "static" (default) uses defaultValue as-is.
+   * "url" fetches JSON from sourceUrl client-side (at edit time and on every
+   * page load) and plucks sourcePath out of it, falling back to
+   * defaultValue while loading or if the fetch/CORS/path fails. An instance
+   * override in WidgetInstanceValuesForm still takes priority over either.
+   */
+  source?: 'static' | 'url';
+  sourceUrl?: string;
+  /** dot/bracket path into the fetched JSON, e.g. "data.temp" or "results.0.name"; empty = use the whole response (coerced to a string) */
+  sourcePath?: string;
 }
 
 export type WidgetElementType = 'text' | 'image' | 'shape';
@@ -273,6 +304,10 @@ export function newWidgetElementId() {
 
 export function newWidgetVariableId() {
   return `wvar-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function newGalleryImageId() {
+  return `gimg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function slugify(text: string): string {

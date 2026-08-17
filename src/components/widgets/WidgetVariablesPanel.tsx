@@ -138,10 +138,60 @@ export function WidgetVariablesPanel({ variables, onChange }: { variables: Widge
               ))}
             </div>
           </div>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
-            {v.scope === 'global' ? 'Value' : 'Default value'}
-            <ValueInput type={v.type} value={v.defaultValue} onChange={(val) => update(v.id, { defaultValue: val })} />
-          </label>
+          {v.type !== 'image' && v.type !== 'boolean' && (
+            <div style={{ display: 'inline-flex', background: 'var(--surface-panel)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-pill)', padding: 2, gap: 2, width: 'fit-content' }}>
+              {(['static', 'url'] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => update(v.id, { source: s })}
+                  style={{
+                    border: 'none',
+                    borderRadius: 'var(--radius-pill)',
+                    padding: '4px 10px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: (v.source ?? 'static') === s ? 'var(--accent-primary)' : 'transparent',
+                    color: (v.source ?? 'static') === s ? '#fff' : 'var(--text-body)',
+                  }}
+                >
+                  {s === 'static' ? 'Fixed value' : 'Pull from a URL'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {v.source === 'url' && v.type !== 'image' && v.type !== 'boolean' ? (
+            <>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+                Source URL (must return JSON, and allow cross-origin requests)
+                <input
+                  value={v.sourceUrl ?? ''}
+                  onChange={(e) => update(v.id, { sourceUrl: e.target.value })}
+                  placeholder="https://api.example.com/data.json"
+                  style={inputStyle}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+                Path into the response (optional), e.g. results.0.name
+                <input
+                  value={v.sourcePath ?? ''}
+                  onChange={(e) => update(v.id, { sourcePath: e.target.value })}
+                  placeholder="data.value"
+                  style={inputStyle}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+                Fallback value (shown until the fetch resolves, or if it fails)
+                <ValueInput type={v.type} value={v.defaultValue} onChange={(val) => update(v.id, { defaultValue: val })} />
+              </label>
+            </>
+          ) : (
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+              {v.scope === 'global' ? 'Value' : 'Default value'}
+              <ValueInput type={v.type} value={v.defaultValue} onChange={(val) => update(v.id, { defaultValue: val })} />
+            </label>
+          )}
         </div>
       ))}
       <button

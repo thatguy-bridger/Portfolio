@@ -23,6 +23,39 @@ export async function uploadImage(file: File): Promise<UploadedImage> {
   return { url, width, height };
 }
 
+const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.ogg'];
+
+export interface UploadedVideo {
+  url: string;
+  fileName: string;
+}
+
+/** Uploads a video file as-is and reports progress, since these can be very large. */
+export function uploadVideo(file: File, onProgress?: (pct: number) => void): Promise<UploadedVideo> {
+  const ext = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`;
+  if (!VIDEO_EXTENSIONS.includes(ext)) {
+    return Promise.reject(new Error(`Unsupported file type — use one of: ${VIDEO_EXTENSIONS.join(', ')}`));
+  }
+  if (file.size > MAX_VIDEO_BYTES) {
+    return Promise.reject(new Error('That file is over the 200MB limit.'));
+  }
+  const path = `videos/${newFileId()}${ext}`;
+  const storageRef = ref(getFirebaseStorage(), path);
+  const task = uploadBytesResumable(storageRef, file, { contentType: file.type || 'video/mp4' });
+  return new Promise((resolve, reject) => {
+    task.on(
+      'state_changed',
+      (snap) => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      reject,
+      async () => {
+        const url = await getDownloadURL(storageRef);
+        resolve({ url, fileName: file.name });
+      },
+    );
+  });
+}
+
 const MAX_MODEL_BYTES = 50 * 1024 * 1024;
 
 export interface UploadedModel {

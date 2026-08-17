@@ -1,20 +1,21 @@
 import { effectsToStyle } from '../TextStylePopover';
+import { useLiveVariableValue } from '../../design-system/useLiveVariableValue';
 import { DEFAULT_CROP, type WidgetElement, type WidgetVariable } from '../../data/siteData';
 
-/** Resolves what an element actually shows: its bound variable's value (instance override, else the variable's default) or its own static value. */
+/** Finds the variable an element is bound to, and the manual per-instance override if any — the actual displayed value (including any live URL-sourced fetch) is resolved by useLiveVariableValue. */
 export function resolveBoundValue(
   element: WidgetElement,
   variables: WidgetVariable[],
   instanceValues?: Record<string, string>,
-): { variable?: WidgetVariable; value?: string } {
+): { variable?: WidgetVariable; instanceOverride?: string } {
   if (!element.boundVariableId) return {};
   const variable = variables.find((v) => v.id === element.boundVariableId);
   if (!variable) return {};
-  const value = variable.scope === 'instance' && instanceValues?.[variable.id] !== undefined ? instanceValues[variable.id] : variable.defaultValue;
-  return { variable, value };
+  const instanceOverride = variable.scope === 'instance' ? instanceValues?.[variable.id] : undefined;
+  return { variable, instanceOverride };
 }
 
-/** Renders one widget element's visual content — text, image, or shape — given its resolved (static or bound) value. Used identically in the Studio's live preview and in a real page's rendered instance. */
+/** Renders one widget element's visual content — text, image, or shape — given its resolved (static, bound, or live-fetched) value. Used identically in the Studio's live preview and in a real page's rendered instance. */
 export function WidgetElementContent({
   element,
   variables,
@@ -24,7 +25,8 @@ export function WidgetElementContent({
   variables: WidgetVariable[];
   instanceValues?: Record<string, string>;
 }) {
-  const { variable, value } = resolveBoundValue(element, variables, instanceValues);
+  const { variable, instanceOverride } = resolveBoundValue(element, variables, instanceValues);
+  const value = useLiveVariableValue(variable, instanceOverride);
 
   if (element.type === 'text') {
     const text = variable ? value ?? '' : element.content ?? '';
