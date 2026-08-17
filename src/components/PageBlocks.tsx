@@ -8,10 +8,12 @@ import { CroppedImage } from './CroppedImage';
 import { ImageCropEditor } from './ImageCropEditor';
 import { LinkEditor } from './LinkEditor';
 import { TextStylePopover, effectsToStyle } from './TextStylePopover';
+import { WidgetRenderer } from './widgets/WidgetRenderer';
+import { WidgetInstanceValuesForm } from './widgets/WidgetInstanceValuesForm';
 import { Button } from './ui/Button';
 import { FONT_LIBRARY, loadFont } from '../design-system/fonts';
 import { useClickAway } from '../design-system/useClickAway';
-import { newBlockId, type CustomPage, type PageBlock, type PageBlockType } from '../data/siteData';
+import { newBlockId, type CustomPage, type PageBlock, type PageBlockType, type Widget } from '../data/siteData';
 
 // Three.js is a heavy dependency (the loader + renderer alone are several
 // hundred KB) — loaded only when a page actually has a 3D block, not as
@@ -25,6 +27,7 @@ const BLOCK_LABEL: Record<PageBlockType, string> = {
   button: 'Button',
   divider: 'Divider',
   model3d: '3D Model',
+  widget: 'Widget',
 };
 
 const SIZE_PX: Record<'sm' | 'md' | 'lg' | 'xl', number> = { sm: 16, md: 20, lg: 32, xl: 48 };
@@ -44,6 +47,8 @@ function newBlock(type: PageBlockType): PageBlock {
     case 'divider':
       return base;
     case 'model3d':
+      return base;
+    case 'widget':
       return base;
   }
 }
@@ -210,12 +215,15 @@ export function PageBlocks({
   editable,
   onChange,
   pages,
+  widgets,
 }: {
   blocks: PageBlock[];
   editable: boolean;
   onChange?: (blocks: PageBlock[]) => void;
   /** Existing custom pages, offered as link suggestions for button blocks. */
   pages?: CustomPage[];
+  /** The widget library, for "widget" blocks to pick from and render. */
+  widgets?: Widget[];
 }) {
   const [adjustingId, setAdjustingId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -424,6 +432,62 @@ export function PageBlocks({
               )}
             </div>
           )}
+
+          {b.type === 'widget' && (() => {
+            const widget = widgets?.find((w) => w.id === b.widgetId);
+            return (
+              <div>
+                {widget ? (
+                  <WidgetRenderer widget={widget} instanceValues={b.widgetValues} />
+                ) : editable ? (
+                  <div
+                    style={{
+                      height: 160,
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px dashed var(--border-strong)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--text-muted)',
+                      fontSize: 13,
+                    }}
+                  >
+                    {widgets && widgets.length > 0 ? 'Pick a widget below' : 'No widgets yet — build one in Widget Studio'}
+                  </div>
+                ) : null}
+                {editable && (
+                  <div style={{ marginTop: 8 }}>
+                    <select
+                      value={b.widgetId ?? ''}
+                      onChange={(e) => update(b.id, { widgetId: e.target.value || undefined, widgetValues: {} })}
+                      style={{
+                        padding: '6px 8px',
+                        borderRadius: 6,
+                        border: '1px solid var(--border-default)',
+                        background: 'var(--surface-card)',
+                        color: 'var(--text-heading)',
+                        fontSize: 13,
+                      }}
+                    >
+                      <option value="">— Choose a widget —</option>
+                      {(widgets ?? []).map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                    {widget && (
+                      <WidgetInstanceValuesForm
+                        widget={widget}
+                        values={b.widgetValues ?? {}}
+                        onChange={(widgetValues) => update(b.id, { widgetValues })}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       ))}
 

@@ -40,7 +40,7 @@ export function PublicSite() {
       <main>
         <Hero hero={data.hero} />
         <WorkGrid tiles={data.tiles} />
-        <PageContent blocks={data.blocks} />
+        <PageContent blocks={data.blocks} widgets={data.widgets} />
         <About about={data.about} />
         <Contact contact={data.contact} />
       </main>

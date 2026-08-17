@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Hero } from '../sections/Hero';
 import { WorkGrid } from '../sections/WorkGrid';
@@ -10,37 +10,21 @@ import { PageTree } from '../components/PageTree';
 import { CustomPageCanvas } from '../components/CustomPageCanvas';
 import { Button } from '../components/ui/Button';
 import { newPageId, uniquePath, type SiteData } from '../data/siteData';
-import { getDraft, getPublished, publishDraft, saveDraft } from '../firebase/site';
 import { useApplyThemeFromData } from '../design-system/useApplyThemeFromData';
 import { useIsNarrow } from '../design-system/useIsNarrow';
+import { useSiteDraft, type SaveStatus } from '../design-system/useSiteDraft';
 import { useTheme } from '../design-system/theme';
 import { useAuth } from '../auth/AuthProvider';
 
 const TOPBAR_HEIGHT = 52;
 
-type SaveStatus = 'loading' | 'idle' | 'saving' | 'saved' | 'error';
-
 export function Builder() {
   const { signOut } = useAuth();
   const theme = useTheme();
-  const [data, setData] = useState<SiteData | null>(null);
-  const [status, setStatus] = useState<SaveStatus>('loading');
-  const [publishedJson, setPublishedJson] = useState<string | null>(null);
-  const [publishing, setPublishing] = useState(false);
+  const { data, setData, status, publishing, hasUnpublished, handlePublish } = useSiteDraft();
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const narrow = useIsNarrow();
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const skipNextSave = useRef(true);
-
-  useEffect(() => {
-    (async () => {
-      const [draft, published] = await Promise.all([getDraft(), getPublished()]);
-      setData(draft.data);
-      setPublishedJson(published ? JSON.stringify(published.data) : null);
-      setStatus('idle');
-    })();
-  }, []);
 
   useApplyThemeFromData(data);
 
@@ -67,29 +51,6 @@ export function Builder() {
     );
   }, [theme.accentId, theme.customAccentHex, theme.displayFont.id, theme.bodyFont.id, data]);
 
-  // Debounced autosave whenever the draft changes.
-  useEffect(() => {
-    if (!data) return;
-    if (skipNextSave.current) {
-      skipNextSave.current = false;
-      return;
-    }
-    setStatus('saving');
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      try {
-        await saveDraft(data);
-        setStatus('saved');
-      } catch {
-        setStatus('error');
-      }
-    }, 800);
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
-
   function createPage() {
     if (!data) return;
     const page = { id: newPageId(), path: uniquePath('untitled-page', data.pages), title: 'Untitled page', blocks: [] };
@@ -114,17 +75,6 @@ export function Builder() {
     setActivePageId(null);
   }
 
-  async function handlePublish() {
-    if (!data) return;
-    setPublishing(true);
-    try {
-      await publishDraft(data);
-      setPublishedJson(JSON.stringify(data));
-    } finally {
-      setPublishing(false);
-    }
-  }
-
   if (!data) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -133,7 +83,6 @@ export function Builder() {
     );
   }
 
-  const hasUnpublished = publishedJson !== JSON.stringify(data);
   const activePage = activePageId ? data.pages.find((p) => p.id === activePageId) ?? null : null;
 
   return (
@@ -184,6 +133,9 @@ export function Builder() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+          <Link to="/edit/widgets" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Widgets{data.widgets.length > 0 ? ` (${data.widgets.length})` : ''}
+          </Link>
           <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             View live site
           </Link>
@@ -220,6 +172,7 @@ export function Builder() {
             <CustomPageCanvas
               page={activePage}
               pages={data.pages}
+              widgets={data.widgets}
               onChange={(patch) => updatePage(activePage.id, patch)}
               onDelete={() => deletePage(activePage.id)}
             />
@@ -227,7 +180,7 @@ export function Builder() {
             <>
               <Hero hero={data.hero} editable onChange={(hero) => setData({ ...data, hero })} />
               <WorkGrid tiles={data.tiles} pages={data.pages} editable onChange={(tiles) => setData({ ...data, tiles })} />
-              <PageContent blocks={data.blocks} editable pages={data.pages} onChange={(blocks) => setData({ ...data, blocks })} />
+              <PageContent blocks={data.blocks} editable pages={data.pages} widgets={data.widgets} onChange={(blocks) => setData({ ...data, blocks })} />
               <About about={data.about} editable onChange={(about) => setData({ ...data, about })} />
               <Contact contact={data.contact} editable onChange={(contact) => setData({ ...data, contact })} />
             </>

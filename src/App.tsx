@@ -5,6 +5,7 @@ import { RequireAuth } from './auth/RequireAuth';
 import { LoginPage } from './auth/LoginPage';
 import { PublicSite } from './routes/PublicSite';
 import { Builder } from './routes/Builder';
+import { WidgetStudio } from './routes/WidgetStudio';
 import { ProjectPage } from './routes/ProjectPage';
 
 export default function App() {
@@ -20,6 +21,14 @@ export default function App() {
               element={
                 <RequireAuth>
                   <Builder />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/edit/widgets"
+              element={
+                <RequireAuth>
+                  <WidgetStudio />
                 </RequireAuth>
               }
             />

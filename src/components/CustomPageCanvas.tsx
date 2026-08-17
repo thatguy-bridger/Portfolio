@@ -2,7 +2,7 @@ import { Editable } from './Editable';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { PageBlocks } from './PageBlocks';
-import { RESERVED_PATHS, uniquePath, type CustomPage } from '../data/siteData';
+import { RESERVED_PATHS, uniquePath, type CustomPage, type Widget } from '../data/siteData';
 
 /**
  * Full-canvas editor for one standalone page — the same real estate and
@@ -13,11 +13,13 @@ import { RESERVED_PATHS, uniquePath, type CustomPage } from '../data/siteData';
 export function CustomPageCanvas({
   page,
   pages,
+  widgets,
   onChange,
   onDelete,
 }: {
   page: CustomPage;
   pages: CustomPage[];
+  widgets: Widget[];
   onChange: (patch: Partial<CustomPage>) => void;
   onDelete: () => void;
 }) {
@@ -59,7 +61,7 @@ export function CustomPageCanvas({
           Delete page
         </Button>
       </div>
-      <PageBlocks blocks={page.blocks} editable pages={pages} onChange={(blocks) => onChange({ blocks })} />
+      <PageBlocks blocks={page.blocks} editable pages={pages} widgets={widgets} onChange={(blocks) => onChange({ blocks })} />
     </section>
   );
 }

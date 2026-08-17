@@ -54,7 +54,7 @@ export interface SiteSkill {
   color: BadgeColor;
 }
 
-export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d';
+export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget';
 
 /** 3D model formats the viewer can load, by file extension. */
 export const MODEL_FORMATS = ['.glb', '.gltf', '.obj', '.fbx', '.stl', '.ply'] as const;
@@ -97,6 +97,64 @@ export interface PageBlock {
   modelSrc?: string;
   modelFormat?: Model3DFormat;
   modelFileName?: string;
+  /** widget instance */
+  widgetId?: string;
+  /** per-instance values for the referenced widget's "instance"-scoped variables, keyed by variable id */
+  widgetValues?: Record<string, string>;
+}
+
+export type WidgetVariableType = 'text' | 'number' | 'color' | 'image' | 'date' | 'boolean';
+export type WidgetVariableScope = 'global' | 'instance';
+
+/**
+ * A typed value a widget's elements can bind to instead of a static value.
+ * "global" variables share one value across every place the widget is
+ * used; "instance" variables get filled in separately each time the
+ * widget is dropped onto a page.
+ */
+export interface WidgetVariable {
+  id: string;
+  name: string;
+  type: WidgetVariableType;
+  scope: WidgetVariableScope;
+  /** the value for a global variable, or the fallback shown for an instance variable until it's filled in — always stored as a string (numbers/booleans/dates encoded as strings, color as hex, image as a Storage URL) */
+  defaultValue: string;
+}
+
+export type WidgetElementType = 'text' | 'image' | 'shape';
+
+/** One positioned piece of a widget's canvas. Position/size are percentages of the canvas, so a widget scales cleanly at any width it's placed at. */
+export interface WidgetElement {
+  id: string;
+  type: WidgetElementType;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** if set, this element's value comes from that variable instead of the static field(s) below */
+  boundVariableId?: string;
+  /** text */
+  content?: string;
+  fontSizePx?: number;
+  align?: 'left' | 'center' | 'right';
+  textEffects?: TextEffects;
+  /** image */
+  src?: string;
+  crop?: ImageCrop;
+  /** shape */
+  shapeKind?: 'rect' | 'circle';
+  fill?: string;
+  radius?: number;
+}
+
+/** A reusable, user-built widget — a small fixed-aspect canvas of elements, some bound to typed variables. */
+export interface Widget {
+  id: string;
+  name: string;
+  /** canvas aspect ratio as a CSS aspect-ratio value, e.g. "4 / 3" */
+  aspect: string;
+  elements: WidgetElement[];
+  variables: WidgetVariable[];
 }
 
 /**
@@ -114,8 +172,8 @@ export interface CustomPage {
   blocks: PageBlock[];
 }
 
-/** Top-level routes a custom page's path can never occupy — they're static routes. */
-export const RESERVED_PATHS = new Set(['login', 'edit']);
+/** Routes a custom page's path can never occupy — they're the app's own static routes. */
+export const RESERVED_PATHS = new Set(['login', 'edit', 'edit/widgets']);
 
 export interface SiteData {
   hero: {
@@ -139,6 +197,8 @@ export interface SiteData {
   pages: CustomPage[];
   /** freeform, endlessly-addable content section between Work and About */
   blocks: PageBlock[];
+  /** reusable widgets, built in the Widget Studio, insertable via a "widget" block anywhere */
+  widgets: Widget[];
   accentId: string;
   customAccentHex: string;
   displayFontId: string;
@@ -180,6 +240,7 @@ export const DEFAULT_SITE_DATA: SiteData = {
   ],
   pages: [],
   blocks: [],
+  widgets: [],
   accentId: 'indigo',
   customAccentHex: '#6366f1',
   displayFontId: DEFAULT_DISPLAY_FONT.id,
@@ -200,6 +261,18 @@ export function newBlockId() {
 
 export function newPageId() {
   return `page-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function newWidgetId() {
+  return `widget-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function newWidgetElementId() {
+  return `wel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function newWidgetVariableId() {
+  return `wvar-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function slugify(text: string): string {

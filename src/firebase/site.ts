@@ -74,8 +74,9 @@ function normalizeSiteData(raw: Record<string, unknown>): SiteData {
   const tiles = Array.isArray(rest.tiles) ? (rest.tiles as Record<string, unknown>[]).map(normalizeTile) : DEFAULT_SITE_DATA.tiles;
   const pages = Array.isArray(rest.pages) ? migratePages(rest.pages) : migrateLegacyProjectPages(rest.projectPages);
   const blocks = migrateBlocks(Array.isArray(rest.blocks) ? rest.blocks : []) as SiteData['blocks'];
+  const widgets = Array.isArray(rest.widgets) ? rest.widgets : [];
   const { projectPages: _legacy, ...withoutLegacy } = rest;
-  return { ...DEFAULT_SITE_DATA, ...withoutLegacy, tiles, pages, blocks } as SiteData;
+  return { ...DEFAULT_SITE_DATA, ...withoutLegacy, tiles, pages, blocks, widgets } as SiteData;
 }
 
 export async function getDraft(): Promise<StoredSite> {

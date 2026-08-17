@@ -1,17 +1,19 @@
 import { PageBlocks } from '../components/PageBlocks';
 import { useReveal } from '../design-system/useReveal';
-import type { CustomPage, PageBlock } from '../data/siteData';
+import type { CustomPage, PageBlock, Widget } from '../data/siteData';
 
 export function PageContent({
   blocks,
   editable = false,
   onChange,
   pages,
+  widgets,
 }: {
   blocks: PageBlock[];
   editable?: boolean;
   onChange?: (blocks: PageBlock[]) => void;
   pages?: CustomPage[];
+  widgets?: Widget[];
 }) {
   const { ref, visible } = useReveal<HTMLDivElement>();
 
@@ -20,7 +22,7 @@ export function PageContent({
   return (
     <section id="content" style={{ padding: '80px 24px', maxWidth: 760, margin: '0 auto' }}>
       <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(16px)', transition: 'opacity 0.6s ease, transform 0.6s ease' }}>
-        <PageBlocks blocks={blocks} editable={editable} onChange={onChange} pages={pages} />
+        <PageBlocks blocks={blocks} editable={editable} onChange={onChange} pages={pages} widgets={widgets} />
       </div>
     </section>
   );

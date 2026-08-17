@@ -34,7 +34,7 @@ export function ProjectPage() {
       ) : page ? (
         <>
           <h1 style={{ fontSize: 40, fontWeight: 700, color: 'var(--text-heading)', margin: '24px 0 32px' }}>{page.title}</h1>
-          <PageBlocks blocks={page.blocks} editable={false} />
+          <PageBlocks blocks={page.blocks} editable={false} widgets={data?.widgets} />
         </>
       ) : (
         <div style={{ marginTop: 40 }}>
