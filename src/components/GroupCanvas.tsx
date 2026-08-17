@@ -29,8 +29,8 @@ interface GuideLine {
   to: number;
 }
 
-/** Tracks a container's rendered width so the canvas can scale to fit narrower screens without a horizontal scrollbar. */
-function useElementWidth(): [React.RefObject<HTMLDivElement>, number] {
+/** Tracks a container's rendered width so the canvas can scale to fit narrower screens without a horizontal scrollbar. Shared with GroupRenderer's read-only desktop rendering. */
+export function useElementWidth(): [React.RefObject<HTMLDivElement>, number] {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   useLayoutEffect(() => {

@@ -190,6 +190,24 @@ export function Builder() {
               onChange={(patch) => updatePage(activePage.id, patch)}
               onDelete={() => deletePage(activePage.id)}
             />
+          ) : data.useFreeformHomepage ? (
+            <div
+              style={{
+                margin: '40px 24px',
+                padding: '24px',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px dashed var(--border-strong)',
+                textAlign: 'center',
+                color: 'var(--text-muted)',
+                fontSize: 14,
+              }}
+            >
+              Your live homepage is using freeform sections now — this classic view is no longer what's published.{' '}
+              <Link to="/edit/homepage" style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
+                Edit it in Homepage Studio
+              </Link>
+              .
+            </div>
           ) : (
             <>
               <Hero hero={data.hero} editable onChange={(hero) => setData({ ...data, hero })} />

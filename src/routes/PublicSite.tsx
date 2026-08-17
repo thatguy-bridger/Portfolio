@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ScrollProgress } from '../components/ScrollProgress';
+import { GroupRenderer } from '../components/GroupRenderer';
 import { Hero } from '../sections/Hero';
 import { WorkGrid } from '../sections/WorkGrid';
 import { PageContent } from '../sections/PageContent';
@@ -26,23 +27,30 @@ export function PublicSite() {
 
   useApplyThemeFromData(data);
 
-  const sections = [
+  const classicSections = [
     { id: 'hero', label: 'Intro' },
     { id: 'work', label: 'Work' },
     ...(data.blocks.length > 0 ? [{ id: 'content', label: 'More' }] : []),
     { id: 'about', label: 'About' },
     { id: 'contact', label: 'Contact' },
   ];
+  const freeformSections = data.homepageGroups.map((g) => ({ id: g.id, label: g.name }));
 
   return (
     <>
-      <ScrollProgress sections={sections} />
+      <ScrollProgress sections={data.useFreeformHomepage ? freeformSections : classicSections} />
       <main>
-        <Hero hero={data.hero} />
-        <WorkGrid tiles={data.tiles} />
-        <PageContent blocks={data.blocks} widgets={data.widgets} />
-        <About about={data.about} />
-        <Contact contact={data.contact} />
+        {data.useFreeformHomepage ? (
+          <GroupRenderer groups={data.homepageGroups} widgets={data.widgets} pages={data.pages} />
+        ) : (
+          <>
+            <Hero hero={data.hero} />
+            <WorkGrid tiles={data.tiles} />
+            <PageContent blocks={data.blocks} widgets={data.widgets} />
+            <About about={data.about} />
+            <Contact contact={data.contact} />
+          </>
+        )}
       </main>
       <Link
         to={user ? '/edit' : '/login'}
