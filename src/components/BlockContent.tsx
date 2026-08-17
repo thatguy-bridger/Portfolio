@@ -68,8 +68,9 @@ export function newBlock(type: PageBlockType): PageBlock {
 // part of the main bundle every visitor downloads.
 const Model3DViewer = lazy(() => import('./Model3DViewer').then((m) => ({ default: m.Model3DViewer })));
 
-export const SIZE_PX: Record<'sm' | 'md' | 'lg' | 'xl', number> = { sm: 16, md: 20, lg: 32, xl: 48 };
-export const SIZES: Array<'sm' | 'md' | 'lg' | 'xl'> = ['sm', 'md', 'lg', 'xl'];
+/** Legacy size-tier px values — still used as the fallback when a block has no explicit fontSizePx, so old content keeps its original size. */
+const LEGACY_HEADING_PX: Record<'sm' | 'md' | 'lg' | 'xl', number> = { sm: 16, md: 20, lg: 32, xl: 48 };
+const LEGACY_TEXT_PX: Record<'sm' | 'md' | 'lg' | 'xl', number> = { sm: 17, md: 20, lg: 28, xl: 40 };
 
 /**
  * The "+ Add block" trigger and its dropdown. The dropdown is portaled to
@@ -167,29 +168,31 @@ export function AddBlockMenu({ onAdd }: { onAdd: (type: PageBlockType) => void }
   );
 }
 
-export function SizePicker({ value, onChange }: { value: 'sm' | 'md' | 'lg' | 'xl'; onChange: (s: 'sm' | 'md' | 'lg' | 'xl') => void }) {
+/** Direct numeric font-size control — replaces the old SM/MD/LG/XL picker with an input that can scale to any size. */
+function FontSizeInput({ value, onChange }: { value: number; onChange: (px: number) => void }) {
   return (
-    <div style={{ display: 'inline-flex', gap: 2, marginBottom: 6 }}>
-      {SIZES.map((s) => (
-        <button
-          key={s}
-          onClick={() => onChange(s)}
-          style={{
-            border: 'none',
-            borderRadius: 4,
-            padding: '2px 8px',
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            background: value === s ? 'var(--accent-primary)' : 'var(--surface-card)',
-            color: value === s ? '#fff' : 'var(--text-muted)',
-          }}
-        >
-          {s}
-        </button>
-      ))}
-    </div>
+    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+      <input
+        type="number"
+        min={8}
+        max={200}
+        value={Math.round(value)}
+        onChange={(e) => {
+          const n = parseInt(e.target.value, 10);
+          if (!Number.isNaN(n)) onChange(Math.max(8, Math.min(200, n)));
+        }}
+        style={{
+          width: 52,
+          padding: '3px 6px',
+          borderRadius: 6,
+          border: '1px solid var(--border-default)',
+          background: 'var(--surface-card)',
+          color: 'var(--text-heading)',
+          fontSize: 13,
+        }}
+      />
+      px
+    </label>
   );
 }
 
@@ -218,12 +221,13 @@ export function BlockContent({
   const navigate = useNavigate();
 
   switch (b.type) {
-    case 'heading':
+    case 'heading': {
+      const fontSize = b.fontSizePx ?? LEGACY_HEADING_PX[b.size ?? 'lg'];
       return (
         <div>
           {editable && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <SizePicker value={b.size ?? 'lg'} onChange={(size) => onUpdate({ size })} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+              <FontSizeInput value={fontSize} onChange={(fontSizePx) => onUpdate({ fontSizePx })} />
               <TextStylePopover value={b.textEffects} onChange={(textEffects) => onUpdate({ textEffects })} />
             </div>
           )}
@@ -232,17 +236,19 @@ export function BlockContent({
             as="h2"
             value={b.content ?? ''}
             onCommit={(v) => onUpdate({ content: v })}
-            style={{ fontSize: SIZE_PX[b.size ?? 'lg'], fontWeight: 700, color: 'var(--text-heading)', ...effectsToStyle(b.textEffects) }}
+            style={{ fontSize, fontWeight: 700, color: 'var(--text-heading)', ...effectsToStyle(b.textEffects) }}
           />
         </div>
       );
+    }
 
-    case 'text':
+    case 'text': {
+      const fontSize = b.fontSizePx ?? LEGACY_TEXT_PX[b.size ?? 'md'];
       return (
         <div>
           {editable && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <SizePicker value={b.size ?? 'md'} onChange={(size) => onUpdate({ size })} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+              <FontSizeInput value={fontSize} onChange={(fontSizePx) => onUpdate({ fontSizePx })} />
               <TextStylePopover value={b.textEffects} onChange={(textEffects) => onUpdate({ textEffects })} />
             </div>
           )}
@@ -253,7 +259,7 @@ export function BlockContent({
             value={b.content ?? ''}
             onCommit={(v) => onUpdate({ content: v })}
             style={{
-              fontSize: SIZE_PX[b.size ?? 'md'] * 0.7 + 6,
+              fontSize,
               lineHeight: 1.6,
               color: 'var(--text-body)',
               fontFamily: 'var(--font-body)',
@@ -263,6 +269,7 @@ export function BlockContent({
           />
         </div>
       );
+    }
 
     case 'image':
       return (

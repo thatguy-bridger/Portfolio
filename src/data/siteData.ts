@@ -77,6 +77,8 @@ export interface GalleryImage {
 
 export type EmbedKind = 'youtube' | 'vimeo' | 'maps' | 'twitter' | 'generic';
 
+export type TextBoxShape = 'none' | 'rounded' | 'pill' | 'square';
+
 /** Per-block text styling — overrides the site-wide font for just this one heading/text block. */
 export interface TextEffects {
   /** a FontDef id from design-system/fonts.ts; unset = inherit the site's display/body font */
@@ -86,6 +88,10 @@ export interface TextEffects {
   underline?: boolean;
   /** any CSS color, e.g. a hex string; unset = inherit the normal heading/body color */
   color?: string;
+  /** fills the text's own box, like a highlight/badge; unset = transparent */
+  backgroundColor?: string;
+  /** the shape of that box when backgroundColor (or this) is set; 'none' = no box even if a background color is chosen */
+  boxShape?: TextBoxShape;
   /** extra letter-spacing in px, can be negative */
   letterSpacing?: number;
   shadow?: boolean;
@@ -96,8 +102,10 @@ export interface PageBlock {
   type: PageBlockType;
   /** heading/text */
   content?: string;
-  /** heading/text size */
+  /** legacy heading/text size tier — still used as a fallback default when fontSizePx is unset, so old content keeps its original size */
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** heading/text font size in px, set directly via the size input; unset = fall back to the size tier above */
+  fontSizePx?: number;
   /** heading/text per-block font + effects */
   textEffects?: TextEffects;
   /** image */
