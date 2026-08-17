@@ -75,8 +75,10 @@ function normalizeSiteData(raw: Record<string, unknown>): SiteData {
   const pages = Array.isArray(rest.pages) ? migratePages(rest.pages) : migrateLegacyProjectPages(rest.projectPages);
   const blocks = migrateBlocks(Array.isArray(rest.blocks) ? rest.blocks : []) as SiteData['blocks'];
   const widgets = Array.isArray(rest.widgets) ? rest.widgets : [];
+  const homepageGroups = Array.isArray(rest.homepageGroups) ? rest.homepageGroups : [];
+  const useFreeformHomepage = typeof rest.useFreeformHomepage === 'boolean' ? rest.useFreeformHomepage : false;
   const { projectPages: _legacy, ...withoutLegacy } = rest;
-  return { ...DEFAULT_SITE_DATA, ...withoutLegacy, tiles, pages, blocks, widgets } as SiteData;
+  return { ...DEFAULT_SITE_DATA, ...withoutLegacy, tiles, pages, blocks, widgets, homepageGroups, useFreeformHomepage } as SiteData;
 }
 
 export async function getDraft(): Promise<StoredSite> {

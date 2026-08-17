@@ -223,6 +223,61 @@ export interface CustomPage {
 /** Routes a custom page's path can never occupy — they're the app's own static routes. */
 export const RESERVED_PATHS = new Set(['login', 'edit', 'edit/widgets', 'edit/messages']);
 
+/** The freeform homepage canvas is authored at this fixed design width (px); it's centered and capped at this width on wider screens. Mobile gets its own layout in a later phase — for now it falls back to a simple stacked column. */
+export const GROUP_CANVAS_WIDTH = 1200;
+
+export type EntranceAnimation = 'none' | 'fade' | 'slide-up' | 'slide-left' | 'slide-right' | 'scale';
+
+/** Visual overrides for one freeform block, layered on top of whatever its content normally looks like. */
+export interface GroupBlockStyle {
+  background?: string;
+  backgroundImage?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  borderRadius?: number;
+  shadow?: boolean;
+}
+
+export interface GroupBlockPosition {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** One freely-positioned block on a homepage group's canvas. */
+export interface GroupBlock {
+  id: string;
+  block: PageBlock;
+  position: GroupBlockPosition;
+  /** simple stacked-fallback order is used on mobile today; a real per-breakpoint layout is a later phase */
+  zIndex: number;
+  locked?: boolean;
+  /** blocks sharing the same groupMemberId move and resize together when dragged as a set */
+  groupMemberId?: string;
+  hideOnMobile?: boolean;
+  style?: GroupBlockStyle;
+  animation?: EntranceAnimation;
+}
+
+/**
+ * A named, freely orderable/removable section of the freeform homepage —
+ * what Hero, About, Work, and Contact become once a site switches over.
+ * Unlike those old fixed components, a group is just a background/height
+ * plus a canvas of freely positioned blocks, so any number of any kind can
+ * exist in any order.
+ */
+export interface HomepageGroup {
+  id: string;
+  name: string;
+  background?: string;
+  backgroundImage?: string;
+  /** px; 0/undefined = auto-height from content */
+  minHeight?: number;
+  paddingY?: number;
+  blocks: GroupBlock[];
+}
+
 export interface SiteData {
   hero: {
     eyebrow: string;
@@ -247,6 +302,10 @@ export interface SiteData {
   blocks: PageBlock[];
   /** reusable widgets, built in the Widget Studio, insertable via a "widget" block anywhere */
   widgets: Widget[];
+  /** the freeform homepage's sections — empty/unused until useFreeformHomepage is switched on */
+  homepageGroups: HomepageGroup[];
+  /** opt-in switch: false (default) renders the classic Hero/Work/About/Contact stack; true renders homepageGroups instead. Never flips itself — only an explicit action in the Builder sets it, so the live site never goes blank mid-rebuild. */
+  useFreeformHomepage: boolean;
   accentId: string;
   customAccentHex: string;
   displayFontId: string;
@@ -289,6 +348,8 @@ export const DEFAULT_SITE_DATA: SiteData = {
   pages: [],
   blocks: [],
   widgets: [],
+  homepageGroups: [],
+  useFreeformHomepage: false,
   accentId: 'indigo',
   customAccentHex: '#6366f1',
   displayFontId: DEFAULT_DISPLAY_FONT.id,
@@ -329,6 +390,14 @@ export function newGalleryImageId() {
 
 export function newRepeaterItemId() {
   return `rpt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function newGroupId() {
+  return `group-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function newGroupBlockId() {
+  return `gblk-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function slugify(text: string): string {
