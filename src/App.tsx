@@ -6,6 +6,7 @@ import { LoginPage } from './auth/LoginPage';
 import { PublicSite } from './routes/PublicSite';
 import { Builder } from './routes/Builder';
 import { WidgetStudio } from './routes/WidgetStudio';
+import { Inbox } from './routes/Inbox';
 import { ProjectPage } from './routes/ProjectPage';
 
 export default function App() {
@@ -29,6 +30,14 @@ export default function App() {
               element={
                 <RequireAuth>
                   <WidgetStudio />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/edit/messages"
+              element={
+                <RequireAuth>
+                  <Inbox />
                 </RequireAuth>
               }
             />

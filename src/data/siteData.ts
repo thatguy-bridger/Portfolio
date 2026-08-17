@@ -204,7 +204,7 @@ export interface CustomPage {
 }
 
 /** Routes a custom page's path can never occupy — they're the app's own static routes. */
-export const RESERVED_PATHS = new Set(['login', 'edit', 'edit/widgets']);
+export const RESERVED_PATHS = new Set(['login', 'edit', 'edit/widgets', 'edit/messages']);
 
 export interface SiteData {
   hero: {

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Button } from '../components/ui/Button';
 import { Editable } from '../components/Editable';
+import { ContactForm } from '../components/ContactForm';
 import { useReveal } from '../design-system/useReveal';
 import type { SiteData } from '../data/siteData';
 
@@ -13,6 +15,7 @@ export function Contact({
   onChange?: (contact: SiteData['contact']) => void;
 }) {
   const { ref, visible } = useReveal<HTMLDivElement>();
+  const [showForm, setShowForm] = useState(false);
 
   return (
     <section id="contact" style={{ padding: '120px 24px 80px', maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
@@ -53,12 +56,13 @@ export function Contact({
               color: 'var(--text-heading)',
             }}
           />
-          {!editable && (
-            <Button variant="primary" onClick={() => (window.location.href = `mailto:${contact.email}`)}>
+          {!editable && !showForm && (
+            <Button variant="primary" onClick={() => setShowForm(true)}>
               Say hello
             </Button>
           )}
         </div>
+        {!editable && showForm && <ContactForm />}
         <footer
           style={{
             marginTop: 80,

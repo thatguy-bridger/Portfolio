@@ -13,6 +13,7 @@ import { newPageId, uniquePath, type SiteData } from '../data/siteData';
 import { useApplyThemeFromData } from '../design-system/useApplyThemeFromData';
 import { useIsNarrow } from '../design-system/useIsNarrow';
 import { useSiteDraft, type SaveStatus } from '../design-system/useSiteDraft';
+import { useMessages } from '../design-system/useMessages';
 import { useTheme } from '../design-system/theme';
 import { useAuth } from '../auth/AuthProvider';
 
@@ -22,6 +23,7 @@ export function Builder() {
   const { signOut } = useAuth();
   const theme = useTheme();
   const { data, setData, status, publishing, hasUnpublished, handlePublish } = useSiteDraft();
+  const { unreadCount } = useMessages();
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const narrow = useIsNarrow();
@@ -135,6 +137,12 @@ export function Builder() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
           <Link to="/edit/widgets" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             Widgets{data.widgets.length > 0 ? ` (${data.widgets.length})` : ''}
+          </Link>
+          <Link
+            to="/edit/messages"
+            style={{ color: unreadCount > 0 ? 'var(--accent-primary)' : 'var(--text-muted)', fontSize: 13, fontWeight: unreadCount > 0 ? 700 : 400, textDecoration: 'none', whiteSpace: 'nowrap' }}
+          >
+            Messages{unreadCount > 0 ? ` (${unreadCount})` : ''}
           </Link>
           <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             View live site

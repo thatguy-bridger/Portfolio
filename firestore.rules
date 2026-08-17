@@ -12,5 +12,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    // Contact form submissions — anyone can send one (validated shape, capped
+    // length, no extra fields), but only the owner can read the inbox, mark
+    // messages read, or delete them. There's no server here, so this is the
+    // spam backstop; a client-side honeypot field catches basic bots too.
+    match /messages/{messageId} {
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'message', 'createdAt', 'read'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120
+        && request.resource.data.email is string && request.resource.data.email.size() > 0 && request.resource.data.email.size() <= 200
+        && request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 4000
+        && request.resource.data.read == false;
+      allow read, update, delete: if request.auth != null;
+    }
   }
 }
