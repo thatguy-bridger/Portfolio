@@ -12,6 +12,7 @@ import { LinkEditor } from './LinkEditor';
 import { TextStylePopover, effectsToStyle } from './TextStylePopover';
 import { WidgetRenderer } from './widgets/WidgetRenderer';
 import { WidgetInstanceValuesForm } from './widgets/WidgetInstanceValuesForm';
+import { RepeaterRenderer, RepeaterBlockEditor } from './RepeaterBlock';
 import { Button } from './ui/Button';
 import { FONT_LIBRARY, loadFont } from '../design-system/fonts';
 import { useClickAway } from '../design-system/useClickAway';
@@ -35,6 +36,7 @@ const BLOCK_LABEL: Record<PageBlockType, string> = {
   gallery: 'Gallery',
   embed: 'Embed',
   code: 'Custom Code',
+  repeater: 'Repeater',
 };
 
 const SIZE_PX: Record<'sm' | 'md' | 'lg' | 'xl', number> = { sm: 16, md: 20, lg: 32, xl: 48 };
@@ -65,6 +67,8 @@ function newBlock(type: PageBlockType): PageBlock {
       return base;
     case 'code':
       return { ...base, codeHtml: '' };
+    case 'repeater':
+      return { ...base, repeaterMode: 'manual', repeaterItems: [], repeaterColumns: 3 };
   }
 }
 
@@ -503,6 +507,13 @@ export function PageBlocks({
               </div>
             );
           })()}
+
+          {b.type === 'repeater' &&
+            (editable ? (
+              <RepeaterBlockEditor block={b} widgets={widgets ?? []} onChange={(patch) => update(b.id, patch)} />
+            ) : (
+              <RepeaterRenderer block={b} widgets={widgets ?? []} />
+            ))}
 
           {b.type === 'video' && (
             <div>

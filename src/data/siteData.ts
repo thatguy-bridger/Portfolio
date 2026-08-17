@@ -54,7 +54,13 @@ export interface SiteSkill {
   color: BadgeColor;
 }
 
-export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget' | 'video' | 'gallery' | 'embed' | 'code';
+export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget' | 'video' | 'gallery' | 'embed' | 'code' | 'repeater';
+
+/** One manually-entered repetition of a repeater block's widget, keyed by the widget's instance-variable ids — same shape as a single widget block's widgetValues. */
+export interface RepeaterItem {
+  id: string;
+  values: Record<string, string>;
+}
 
 /** 3D model formats the viewer can load, by file extension. */
 export const MODEL_FORMATS = ['.glb', '.gltf', '.obj', '.fbx', '.stl', '.ply'] as const;
@@ -121,6 +127,17 @@ export interface PageBlock {
   embedUrl?: string;
   /** custom code — raw HTML/CSS/JS, rendered inside a sandboxed iframe */
   codeHtml?: string;
+  /** repeater — repeats a widget once per data item, either typed in by hand or pulled from a URL */
+  repeaterWidgetId?: string;
+  repeaterMode?: 'manual' | 'url';
+  repeaterItems?: RepeaterItem[];
+  repeaterSourceUrl?: string;
+  /** dot/bracket path to the array within the fetched JSON, e.g. "results" or "data.items"; empty = the response itself is the array */
+  repeaterSourcePath?: string;
+  /** maps each of the widget's instance-scoped variable ids to a dot/bracket path within one array item, e.g. { "wvar-1": "name", "wvar-2": "stats.followers" } */
+  repeaterFieldMap?: Record<string, string>;
+  /** how many repetitions per row in the grid */
+  repeaterColumns?: number;
 }
 
 export type WidgetVariableType = 'text' | 'number' | 'color' | 'image' | 'date' | 'boolean';
@@ -308,6 +325,10 @@ export function newWidgetVariableId() {
 
 export function newGalleryImageId() {
   return `gimg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function newRepeaterItemId() {
+  return `rpt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function slugify(text: string): string {
