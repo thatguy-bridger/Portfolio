@@ -75,7 +75,13 @@ export function WidgetCanvas({
   return (
     <div
       ref={containerRef}
-      onClick={() => onSelect(null)}
+      onClick={(e) => {
+        // Only deselect for a click on the empty canvas itself — a click on an
+        // element bubbles up here too (pointerdown+pointerup with no movement
+        // fires a click), and would otherwise immediately undo the selection
+        // startDrag just made on pointerdown.
+        if (e.target === e.currentTarget) onSelect(null);
+      }}
       style={{
         position: 'relative',
         width: '100%',
