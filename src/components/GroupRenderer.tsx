@@ -1,13 +1,72 @@
+import { useEffect, useRef, useState } from 'react';
 import { BlockContent } from './BlockContent';
 import { useElementWidth } from './GroupCanvas';
 import { WorkGrid } from '../sections/WorkGrid';
 import { useIsNarrow } from '../design-system/useIsNarrow';
-import { GROUP_CANVAS_WIDTH, type CustomPage, type HomepageGroup, type SiteTile, type Widget } from '../data/siteData';
+import { useTheme } from '../design-system/theme';
+import { GROUP_CANVAS_WIDTH, type CustomPage, type EntranceAnimation, type HomepageGroup, type SiteTile, type Widget } from '../data/siteData';
 
 /** Below this width the scaled 1200px-design canvas would render blocks too small to read or tap — fall back to a simple stacked column instead. A real per-breakpoint mobile layout is a later phase. */
 const MOBILE_BREAKPOINT = 700;
 
 function noop() {}
+
+function hiddenTransform(animation: EntranceAnimation | undefined): string | undefined {
+  switch (animation) {
+    case 'slide-up':
+      return 'translateY(28px)';
+    case 'slide-left':
+      return 'translateX(-32px)';
+    case 'slide-right':
+      return 'translateX(32px)';
+    case 'scale':
+      return 'scale(0.92)';
+    default:
+      return undefined;
+  }
+}
+
+/** Applies a block's entrance animation via IntersectionObserver, honoring reduced-motion (shows the final state immediately, no transition). A block with no animation (or 'none') renders with no wrapper overhead. */
+function Reveal({ animation, children }: { animation: EntranceAnimation | undefined; children: React.ReactNode }) {
+  const { reducedMotion } = useTheme();
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!animation || animation === 'none' || reducedMotion) return;
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [animation, reducedMotion]);
+
+  if (!animation || animation === 'none') return <>{children}</>;
+
+  const shown = reducedMotion || visible;
+  return (
+    <div
+      ref={ref}
+      style={{
+        width: '100%',
+        height: '100%',
+        opacity: shown ? 1 : 0,
+        transform: shown ? 'none' : hiddenTransform(animation),
+        transition: reducedMotion ? 'none' : 'opacity 0.6s ease, transform 0.6s ease',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 /** Read-only rendering of the freeform homepage's sections, for the public site. */
 export function GroupRenderer({ groups, widgets, pages, tiles }: { groups: HomepageGroup[]; widgets: Widget[]; pages: CustomPage[]; tiles: SiteTile[] }) {
@@ -38,13 +97,15 @@ function GroupSection({ group, narrow, widgets, pages, tiles }: { group: Homepag
     return (
       <section id={group.id} style={{ ...sectionStyle, padding: '48px 24px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 600, margin: '0 auto' }}>
-          {ordered.map((b) =>
-            b.block.type === 'workgrid' ? (
-              <WorkGrid key={b.id} tiles={tiles} />
-            ) : (
-              <BlockContent key={b.id} block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
-            ),
-          )}
+          {ordered.map((b) => (
+            <Reveal key={b.id} animation={b.animation}>
+              {b.block.type === 'workgrid' ? (
+                <WorkGrid tiles={tiles} />
+              ) : (
+                <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
+              )}
+            </Reveal>
+          ))}
         </div>
       </section>
     );
@@ -78,11 +139,13 @@ function GroupSection({ group, narrow, widgets, pages, tiles }: { group: Homepag
               boxShadow: b.style?.shadow ? 'var(--shadow-lg)' : undefined,
             }}
           >
-            {b.block.type === 'workgrid' ? (
-              <WorkGrid tiles={tiles} />
-            ) : (
-              <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
-            )}
+            <Reveal animation={b.animation}>
+              {b.block.type === 'workgrid' ? (
+                <WorkGrid tiles={tiles} />
+              ) : (
+                <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
+              )}
+            </Reveal>
           </div>
         ))}
       </div>

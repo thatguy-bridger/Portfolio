@@ -2,7 +2,29 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { BlockContent, AddBlockMenu, newBlock } from './BlockContent';
 import { WorkGrid } from '../sections/WorkGrid';
 import { Button } from './ui/Button';
-import { newBlockId, newGroupBlockId, GROUP_CANVAS_WIDTH, type CustomPage, type GroupBlock, type PageBlockType, type SiteTile, type Widget } from '../data/siteData';
+import { ImageInput } from './ImageInput';
+import { ToolbarDropdown, ColorGrid } from './TextStylePopover';
+import {
+  newBlockId,
+  newGroupBlockId,
+  GROUP_CANVAS_WIDTH,
+  type CustomPage,
+  type EntranceAnimation,
+  type GroupBlock,
+  type GroupBlockStyle,
+  type PageBlockType,
+  type SiteTile,
+  type Widget,
+} from '../data/siteData';
+
+const ANIMATION_OPTIONS: Array<{ key: EntranceAnimation; label: string }> = [
+  { key: 'none', label: 'None' },
+  { key: 'fade', label: 'Fade in' },
+  { key: 'slide-up', label: 'Slide up' },
+  { key: 'slide-left', label: 'Slide from left' },
+  { key: 'slide-right', label: 'Slide from right' },
+  { key: 'scale', label: 'Scale in' },
+];
 
 const FINE_PX = 8;
 const SNAP_PX = 6;
@@ -262,8 +284,16 @@ export function GroupCanvas({
   function ungroupSelected() {
     onChange(blocks.map((b) => (selectedIds.includes(b.id) ? { ...b, groupMemberId: undefined } : b)));
   }
+  function patchSelectedStyle(patch: Partial<GroupBlockStyle>) {
+    onChange(blocks.map((b) => (selectedIds.includes(b.id) ? { ...b, style: { ...b.style, ...patch } } : b)));
+  }
+  function setSelectedAnimation(animation: EntranceAnimation) {
+    onChange(blocks.map((b) => (selectedIds.includes(b.id) ? { ...b, animation } : b)));
+  }
 
   const selectedBlocks = blocks.filter((b) => selectedIds.includes(b.id));
+  const primaryStyle = selectedBlocks[0]?.style ?? {};
+  const primaryAnimation = selectedBlocks[0]?.animation ?? 'none';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -277,6 +307,79 @@ export function GroupCanvas({
           <ToolbarButton onClick={toggleLock}>{selectedBlocks.some((b) => b.locked) ? 'Unlock' : 'Lock'}</ToolbarButton>
           {selectedBlocks.length > 1 && <ToolbarButton onClick={groupSelected}>Group</ToolbarButton>}
           {selectedBlocks.some((b) => b.groupMemberId) && <ToolbarButton onClick={ungroupSelected}>Ungroup</ToolbarButton>}
+
+          <ToolbarDropdown title="Style" width={220} trigger={<span>Style</span>}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Background color</div>
+            <ColorGrid value={primaryStyle.background} onPick={(c) => patchSelectedStyle({ background: c })} onClear={() => patchSelectedStyle({ background: undefined })} />
+
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4 }}>Background image</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ImageInput label={primaryStyle.backgroundImage ? 'Replace' : '+ Upload'} onSelect={(src) => patchSelectedStyle({ backgroundImage: src })} />
+              {primaryStyle.backgroundImage && (
+                <button onClick={() => patchSelectedStyle({ backgroundImage: undefined })} style={{ border: 'none', background: 'none', color: 'var(--red-500)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                  Remove
+                </button>
+              )}
+            </div>
+
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4 }}>Border</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ColorGrid value={primaryStyle.borderColor} onPick={(c) => patchSelectedStyle({ borderColor: c })} onClear={() => patchSelectedStyle({ borderColor: undefined })} />
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+              Width
+              <input
+                type="number"
+                min={0}
+                max={20}
+                value={primaryStyle.borderWidth ?? 0}
+                onChange={(e) => patchSelectedStyle({ borderWidth: Math.max(0, Number(e.target.value) || 0) })}
+                style={{ width: 50, padding: '3px 6px', borderRadius: 6, border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-heading)', fontSize: 12 }}
+              />
+              px
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+              Corner radius
+              <input
+                type="number"
+                min={0}
+                max={999}
+                value={primaryStyle.borderRadius ?? 0}
+                onChange={(e) => patchSelectedStyle({ borderRadius: Math.max(0, Number(e.target.value) || 0) })}
+                style={{ width: 50, padding: '3px 6px', borderRadius: 6, border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-heading)', fontSize: 12 }}
+              />
+              px
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-body)' }}>
+              <input type="checkbox" checked={!!primaryStyle.shadow} onChange={(e) => patchSelectedStyle({ shadow: e.target.checked })} />
+              Shadow
+            </label>
+          </ToolbarDropdown>
+
+          <ToolbarDropdown title="Entrance animation" width={170} trigger={<span>Animate</span>}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Entrance animation</div>
+            {ANIMATION_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setSelectedAnimation(opt.key)}
+                style={{
+                  textAlign: 'left',
+                  border: 'none',
+                  background: primaryAnimation === opt.key ? 'var(--accent-primary)' : 'none',
+                  color: primaryAnimation === opt.key ? '#fff' : 'var(--text-body)',
+                  borderRadius: 6,
+                  padding: '6px 8px',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </ToolbarDropdown>
+
           <ToolbarButton onClick={removeSelected} danger>
             Delete
           </ToolbarButton>

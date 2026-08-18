@@ -57,7 +57,7 @@ function ToggleButton({ active, label, title, onClick }: { active: boolean; labe
  * living in one big popover. Portaled to document.body with fixed
  * positioning so it isn't clipped inside a modal's scroll area.
  */
-function ToolbarDropdown({ trigger, title, width = 200, children }: { trigger: ReactNode; title: string; width?: number; children: ReactNode }) {
+export function ToolbarDropdown({ trigger, title, width = 200, children }: { trigger: ReactNode; title: string; width?: number; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -141,7 +141,7 @@ function ToolbarDropdown({ trigger, title, width = 200, children }: { trigger: R
   );
 }
 
-function ColorGrid({ value, onPick, onClear }: { value?: string; onPick: (c: string) => void; onClear: () => void }) {
+export function ColorGrid({ value, onPick, onClear }: { value?: string; onPick: (c: string) => void; onClear: () => void }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, alignItems: 'center' }}>
       <button
