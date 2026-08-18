@@ -524,6 +524,10 @@ export function GroupEditor({
             style={{ width: 60, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-heading)', fontSize: 13 }}
           />
         </label>
+        <label title="Scrolling snaps to the top of this section instead of stopping wherever the scroll gesture ends" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+          <input type="checkbox" checked={!!group.scrollSnap} onChange={(e) => onChange({ scrollSnap: e.target.checked })} />
+          Scroll-snap this section
+        </label>
       </div>
 
       <GroupCanvas

@@ -27,6 +27,17 @@ export function PublicSite() {
 
   useApplyThemeFromData(data);
 
+  // Scroll-snap is opt-in per group (HomepageGroup.scrollSnap); it only takes effect at the
+  // document level once at least one visible group has it on, and never applies to the classic
+  // (non-freeform) homepage layout.
+  const snapEnabled = data.useFreeformHomepage && data.homepageGroups.some((g) => g.scrollSnap);
+  useEffect(() => {
+    document.documentElement.style.scrollSnapType = snapEnabled ? 'y proximity' : '';
+    return () => {
+      document.documentElement.style.scrollSnapType = '';
+    };
+  }, [snapEnabled]);
+
   const classicSections = [
     { id: 'hero', label: 'Intro' },
     { id: 'work', label: 'Work' },

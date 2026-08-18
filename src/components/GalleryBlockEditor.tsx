@@ -15,6 +15,35 @@ export function GalleryGrid({ images }: { images: GalleryImage[] }) {
   );
 }
 
+/** A sideways-scrolling row of photos, each a fixed-height card at its own aspect ratio — the read-only rendering of a horizontal-scroll block. Snaps each card into place as you scroll for a cleaner feel on touch devices. */
+export function HorizontalScrollRow({ images }: { images: GalleryImage[] }) {
+  if (images.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', gap: 14, overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x proximity', padding: '2px 2px 10px', WebkitOverflowScrolling: 'touch' }}>
+      {images.map((img) => {
+        const ratio = img.width && img.height ? img.width / img.height : 1.4;
+        return (
+          <div
+            key={img.id}
+            style={{
+              flex: '0 0 auto',
+              height: '100%',
+              minHeight: 200,
+              aspectRatio: `${ratio}`,
+              borderRadius: 'var(--radius-md)',
+              overflow: 'hidden',
+              background: 'var(--surface-card)',
+              scrollSnapAlign: 'start',
+            }}
+          >
+            <img src={img.src} alt={img.alt ?? ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function GalleryBlockEditor({ images, onChange }: { images: GalleryImage[]; onChange: (images: GalleryImage[]) => void }) {
   function add(src: string, width: number, height: number) {
     onChange([...images, { id: newGalleryImageId(), src, width, height }]);

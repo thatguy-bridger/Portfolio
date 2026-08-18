@@ -54,7 +54,7 @@ export interface SiteSkill {
   color: BadgeColor;
 }
 
-export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget' | 'video' | 'gallery' | 'embed' | 'code' | 'repeater' | 'workgrid';
+export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget' | 'video' | 'gallery' | 'embed' | 'code' | 'repeater' | 'workgrid' | 'horizontal-scroll';
 
 /** One manually-entered repetition of a repeater block's widget, keyed by the widget's instance-variable ids — same shape as a single widget block's widgetValues. */
 export interface RepeaterItem {
@@ -129,7 +129,7 @@ export interface PageBlock {
   /** video — a Firebase Storage download URL for an uploaded file */
   videoSrc?: string;
   videoFileName?: string;
-  /** gallery */
+  /** gallery, and horizontal-scroll (which reuses the same photo list/editor, just laid out as a sideways-scrolling row) */
   galleryImages?: GalleryImage[];
   /** embed — the raw URL the user pasted (a YouTube/Vimeo/Maps/etc link); the kind is detected from it */
   embedUrl?: string;
@@ -239,6 +239,26 @@ export const MOBILE_CANVAS_WIDTH = 390;
 
 export type EntranceAnimation = 'none' | 'fade' | 'slide-up' | 'slide-left' | 'slide-right' | 'scale';
 
+/**
+ * A continuous, scroll-position-driven effect — distinct from EntranceAnimation,
+ * which fires once and stays. 'parallax' shifts the block opposite the scroll
+ * direction; 'progress' fades/scales it in and out as it crosses the viewport
+ * (reversible, unlike a one-shot reveal); 'sticky' pins it to the viewport while
+ * its group section scrolls past.
+ */
+export type ScrollEffectType = 'none' | 'parallax' | 'progress' | 'sticky';
+export type ScrollEffectPreset = 'subtle' | 'medium' | 'dramatic';
+
+export interface ScrollEffectConfig {
+  type: ScrollEffectType;
+  /** unset (unless type is 'sticky') means "use the advanced intensity value" instead of a named preset */
+  preset?: ScrollEffectPreset;
+  /** 0-100 advanced override for parallax/progress strength, used when preset is unset */
+  intensity?: number;
+  /** px from the top of the viewport while pinned (sticky only) */
+  stickyOffset?: number;
+}
+
 /** Visual overrides for one freeform block, layered on top of whatever its content normally looks like. */
 export interface GroupBlockStyle {
   background?: string;
@@ -272,6 +292,8 @@ export interface GroupBlock {
   mobilePosition?: GroupBlockPosition;
   /** true once this block's desktop position has changed since mobilePosition was last touched — surfaced as a "review mobile layout" flag in the editor */
   mobileStale?: boolean;
+  /** continuous scroll-driven motion — separate from the one-shot entrance `animation` above. Disabled under reduced-motion (except sticky, which isn't motion) and on narrow/mobile viewports for parallax and sticky specifically. */
+  scrollEffect?: ScrollEffectConfig;
 }
 
 /**
@@ -290,6 +312,8 @@ export interface HomepageGroup {
   minHeight?: number;
   paddingY?: number;
   blocks: GroupBlock[];
+  /** opts this section in as a scroll-snap stop — off by default; the page only applies snap-scrolling at all once at least one group has this on */
+  scrollSnap?: boolean;
 }
 
 export interface SiteData {

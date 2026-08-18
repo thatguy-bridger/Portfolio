@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { ImageInput } from './ImageInput';
 import { ToolbarDropdown } from './Popover';
 import { ColorPickerPanel } from './ColorPicker';
+import { ScrollEffectBlock } from './ScrollEffects';
 import {
   newBlockId,
   newGroupBlockId,
@@ -16,6 +17,9 @@ import {
   type GroupBlockPosition,
   type GroupBlockStyle,
   type PageBlockType,
+  type ScrollEffectConfig,
+  type ScrollEffectPreset,
+  type ScrollEffectType,
   type SiteTile,
   type Widget,
 } from '../data/siteData';
@@ -29,6 +33,18 @@ const ANIMATION_OPTIONS: Array<{ key: EntranceAnimation; label: string }> = [
   { key: 'slide-left', label: 'Slide from left' },
   { key: 'slide-right', label: 'Slide from right' },
   { key: 'scale', label: 'Scale in' },
+];
+
+const SCROLL_EFFECT_OPTIONS: Array<{ key: ScrollEffectType; label: string }> = [
+  { key: 'none', label: 'None' },
+  { key: 'parallax', label: 'Parallax' },
+  { key: 'progress', label: 'Progress' },
+  { key: 'sticky', label: 'Sticky / pinned' },
+];
+const PRESET_OPTIONS: Array<{ key: ScrollEffectPreset; label: string }> = [
+  { key: 'subtle', label: 'Subtle' },
+  { key: 'medium', label: 'Medium' },
+  { key: 'dramatic', label: 'Dramatic' },
 ];
 
 const FINE_PX = 8;
@@ -358,10 +374,16 @@ export function GroupCanvas({
   function setSelectedAnimation(animation: EntranceAnimation) {
     onChange(blocks.map((b) => (selectedIds.includes(b.id) ? { ...b, animation } : b)));
   }
+  function patchSelectedScrollEffect(patch: Partial<ScrollEffectConfig>) {
+    onChange(
+      blocks.map((b) => (selectedIds.includes(b.id) ? { ...b, scrollEffect: { type: 'none', ...b.scrollEffect, ...patch } } : b)),
+    );
+  }
 
   const selectedBlocks = blocks.filter((b) => selectedIds.includes(b.id));
   const primaryStyle = selectedBlocks[0]?.style ?? {};
   const primaryAnimation = selectedBlocks[0]?.animation ?? 'none';
+  const primaryScrollEffect: ScrollEffectConfig = selectedBlocks[0]?.scrollEffect ?? { type: 'none' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -449,6 +471,80 @@ export function GroupCanvas({
             ))}
           </ToolbarDropdown>
 
+          <ToolbarDropdown title="Scroll effect" width={200} trigger={<span>Scroll {primaryScrollEffect.type !== 'none' ? `· ${primaryScrollEffect.type}` : ''}</span>}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Scroll effect</div>
+            {SCROLL_EFFECT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => patchSelectedScrollEffect({ type: opt.key })}
+                style={{
+                  textAlign: 'left',
+                  border: 'none',
+                  background: primaryScrollEffect.type === opt.key ? 'var(--accent-primary)' : 'none',
+                  color: primaryScrollEffect.type === opt.key ? '#fff' : 'var(--text-body)',
+                  borderRadius: 6,
+                  padding: '6px 8px',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+
+            {(primaryScrollEffect.type === 'parallax' || primaryScrollEffect.type === 'progress') && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 6 }}>Strength</div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {PRESET_OPTIONS.map((p) => (
+                    <button
+                      key={p.key}
+                      onClick={() => patchSelectedScrollEffect({ preset: p.key, intensity: undefined })}
+                      style={{
+                        flex: 1,
+                        border: 'none',
+                        background: primaryScrollEffect.preset === p.key ? 'var(--accent-primary)' : 'var(--surface-card)',
+                        color: primaryScrollEffect.preset === p.key ? '#fff' : 'var(--text-body)',
+                        borderRadius: 6,
+                        padding: '5px 4px',
+                        fontSize: 11,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                  Advanced: intensity {primaryScrollEffect.preset ? '' : `(${primaryScrollEffect.intensity ?? 35})`}
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={primaryScrollEffect.preset ? 0 : primaryScrollEffect.intensity ?? 35}
+                    disabled={!!primaryScrollEffect.preset}
+                    onChange={(e) => patchSelectedScrollEffect({ preset: undefined, intensity: Number(e.target.value) })}
+                  />
+                </label>
+              </>
+            )}
+
+            {primaryScrollEffect.type === 'sticky' && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                Offset from top
+                <input
+                  type="number"
+                  min={0}
+                  max={200}
+                  value={primaryScrollEffect.stickyOffset ?? 20}
+                  onChange={(e) => patchSelectedScrollEffect({ stickyOffset: Math.max(0, Number(e.target.value) || 0) })}
+                  style={{ width: 55, padding: '3px 6px', borderRadius: 6, border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-heading)', fontSize: 12 }}
+                />
+                px
+              </label>
+            )}
+          </ToolbarDropdown>
+
           <ToolbarButton onClick={removeSelected} danger>
             Delete
           </ToolbarButton>
@@ -518,11 +614,13 @@ export function GroupCanvas({
               }}
             >
               <div style={{ width: '100%', height: '100%', overflow: b.block.type === 'workgrid' ? 'visible' : 'auto', padding: b.block.type === 'workgrid' ? 0 : 4 }}>
-                {b.block.type === 'workgrid' ? (
-                  <WorkGrid tiles={tiles ?? []} pages={pages} editable={editable} onChange={onTilesChange} />
-                ) : (
-                  <BlockContent block={b.block} editable={editable} onUpdate={(patch) => updateBlock(b.id, { block: { ...b.block, ...patch } })} pages={pages} widgets={widgets} />
-                )}
+                <ScrollEffectBlock effect={b.scrollEffect} editorPreview>
+                  {b.block.type === 'workgrid' ? (
+                    <WorkGrid tiles={tiles ?? []} pages={pages} editable={editable} onChange={onTilesChange} />
+                  ) : (
+                    <BlockContent block={b.block} editable={editable} onUpdate={(patch) => updateBlock(b.id, { block: { ...b.block, ...patch } })} pages={pages} widgets={widgets} />
+                  )}
+                </ScrollEffectBlock>
               </div>
 
               {editable && selectedIds.includes(b.id) && !b.locked && (
@@ -583,6 +681,14 @@ export function GroupCanvas({
               {editable && mobile && b.mobileStale && (
                 <div title="Desktop position changed since this block's mobile layout was last touched" style={{ position: 'absolute', top: -10, left: -10, fontSize: 12, background: '#d97706', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-strong)' }}>
                   ⚠
+                </div>
+              )}
+              {editable && b.scrollEffect && b.scrollEffect.type !== 'none' && (
+                <div
+                  title={`Scroll effect: ${b.scrollEffect.type}${b.scrollEffect.type === 'sticky' ? ' (pins in the live preview and published site)' : ''}`}
+                  style={{ position: 'absolute', bottom: -10, right: -10, fontSize: 12, background: 'var(--accent-primary)', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-strong)' }}
+                >
+                  {b.scrollEffect.type === 'sticky' ? '📌' : b.scrollEffect.type === 'parallax' ? '↕' : '◐'}
                 </div>
               )}
             </div>

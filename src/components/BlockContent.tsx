@@ -5,7 +5,7 @@ import { Editable } from './Editable';
 import { ImageInput } from './ImageInput';
 import { Model3DInput } from './Model3DInput';
 import { VideoInput } from './VideoInput';
-import { GalleryBlockEditor, GalleryGrid } from './GalleryBlockEditor';
+import { GalleryBlockEditor, GalleryGrid, HorizontalScrollRow } from './GalleryBlockEditor';
 import { CroppedImage } from './CroppedImage';
 import { ImageCropEditor } from './ImageCropEditor';
 import { LinkEditor } from './LinkEditor';
@@ -34,6 +34,7 @@ export const BLOCK_LABEL: Record<Exclude<PageBlockType, 'workgrid'>, string> = {
   embed: 'Embed',
   code: 'Custom Code',
   repeater: 'Repeater',
+  'horizontal-scroll': 'Horizontal Scroll',
 };
 
 export function newBlock(type: PageBlockType): PageBlock {
@@ -56,6 +57,8 @@ export function newBlock(type: PageBlockType): PageBlock {
     case 'video':
       return base;
     case 'gallery':
+      return { ...base, galleryImages: [] };
+    case 'horizontal-scroll':
       return { ...base, galleryImages: [] };
     case 'embed':
       return base;
@@ -498,6 +501,13 @@ export function BlockContent({
         <GalleryBlockEditor images={b.galleryImages ?? []} onChange={(galleryImages) => onUpdate({ galleryImages })} />
       ) : (
         <GalleryGrid images={b.galleryImages ?? []} />
+      );
+
+    case 'horizontal-scroll':
+      return editable ? (
+        <GalleryBlockEditor images={b.galleryImages ?? []} onChange={(galleryImages) => onUpdate({ galleryImages })} />
+      ) : (
+        <HorizontalScrollRow images={b.galleryImages ?? []} />
       );
 
     case 'embed': {

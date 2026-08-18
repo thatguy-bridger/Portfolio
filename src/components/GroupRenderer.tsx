@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BlockContent } from './BlockContent';
 import { useElementWidth, seedMobileLayout } from './GroupCanvas';
+import { ScrollEffectBlock } from './ScrollEffects';
 import { WorkGrid } from '../sections/WorkGrid';
 import { useIsNarrow } from '../design-system/useIsNarrow';
 import { useTheme } from '../design-system/theme';
@@ -115,6 +116,7 @@ function GroupSection({ group, narrow, widgets, pages, tiles }: { group: Homepag
     backgroundImage: group.backgroundImage ? `url(${group.backgroundImage})` : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
+    scrollSnapAlign: group.scrollSnap ? 'start' : undefined,
   };
 
   const visibleBlocks = group.blocks.filter((b) => !b.hideOnMobile);
@@ -127,13 +129,15 @@ function GroupSection({ group, narrow, widgets, pages, tiles }: { group: Homepag
       <section id={group.id} style={{ ...sectionStyle, padding: '48px 24px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 600, margin: '0 auto' }}>
           {ordered.map((b) => (
-            <Reveal key={b.id} animation={b.animation}>
-              {b.block.type === 'workgrid' ? (
-                <WorkGrid tiles={tiles} />
-              ) : (
-                <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
-              )}
-            </Reveal>
+            <ScrollEffectBlock key={b.id} effect={b.scrollEffect}>
+              <Reveal animation={b.animation}>
+                {b.block.type === 'workgrid' ? (
+                  <WorkGrid tiles={tiles} />
+                ) : (
+                  <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
+                )}
+              </Reveal>
+            </ScrollEffectBlock>
           ))}
         </div>
       </section>
@@ -181,13 +185,15 @@ function GroupSection({ group, narrow, widgets, pages, tiles }: { group: Homepag
                 boxShadow: b.style?.shadow ? 'var(--shadow-lg)' : undefined,
               }}
             >
-              <Reveal animation={b.animation}>
-                {b.block.type === 'workgrid' ? (
-                  <WorkGrid tiles={tiles} />
-                ) : (
-                  <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
-                )}
-              </Reveal>
+              <ScrollEffectBlock effect={b.scrollEffect}>
+                <Reveal animation={b.animation}>
+                  {b.block.type === 'workgrid' ? (
+                    <WorkGrid tiles={tiles} />
+                  ) : (
+                    <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
+                  )}
+                </Reveal>
+              </ScrollEffectBlock>
             </div>
           );
         })}
