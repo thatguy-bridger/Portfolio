@@ -1,6 +1,6 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { initializeFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 const config = {
@@ -23,7 +23,10 @@ let storageInstance: FirebaseStorage | null = null;
 if (isFirebaseConfigured) {
   app = initializeApp(config);
   authInstance = getAuth(app);
-  dbInstance = getFirestore(app);
+  // Many optional fields (colors, background images, style overrides) are cleared by setting
+  // them to `undefined` rather than deleting the key — without this setting Firestore rejects
+  // the whole write outright whenever that happens (e.g. clearing a color swatch).
+  dbInstance = initializeFirestore(app, { ignoreUndefinedProperties: true });
   storageInstance = getStorage(app);
 }
 

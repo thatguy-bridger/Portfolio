@@ -119,6 +119,41 @@ export const DEFAULT_SWATCHES = [
   '#ffffff',
 ];
 
+/** User-saved colors, shared across every picker in the app and persisted locally so they survive reloads. */
+const CUSTOM_SWATCHES_KEY = 'portfolio:customSwatches';
+const customSwatchListeners = new Set<(swatches: string[]) => void>();
+
+function loadCustomSwatches(): string[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_SWATCHES_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((c) => typeof c === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomSwatches(swatches: string[]) {
+  try {
+    localStorage.setItem(CUSTOM_SWATCHES_KEY, JSON.stringify(swatches));
+  } catch {
+    // localStorage unavailable (private mode, etc.) — the saved-colors row just won't persist across reloads.
+  }
+  customSwatchListeners.forEach((listener) => listener(swatches));
+}
+
+/** Keeps every open picker's "saved colors" row in sync with each other, in the same tab. */
+function useCustomSwatches(): [string[], (swatches: string[]) => void] {
+  const [swatches, setSwatches] = useState<string[]>(loadCustomSwatches);
+  useEffect(() => {
+    customSwatchListeners.add(setSwatches);
+    return () => {
+      customSwatchListeners.delete(setSwatches);
+    };
+  }, []);
+  return [swatches, saveCustomSwatches];
+}
+
 const numberInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '3px 4px',
@@ -172,6 +207,8 @@ export function ColorPickerPanel({
   const rgba = parseColor(value);
   const hsv = rgbToHsv(rgba.r, rgba.g, rgba.b);
   const [hue, setHue] = useState(hsv.h);
+  const [customSwatches, setCustomSwatches] = useCustomSwatches();
+  const currentColor = value ?? formatColor(rgba, allowAlpha);
   // Hue is ambiguous at s=0/v=0 (grays), so keep the slider's own hue steady across such updates instead of snapping to 0.
   useEffect(() => {
     if (hsv.s > 0.5 && hsv.v > 0.5) setHue(hsv.h);
@@ -381,6 +418,52 @@ export function ColorPickerPanel({
             }}
           />
         ))}
+        {customSwatches.length > 0 && <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--border-default)', margin: '0 1px' }} />}
+        {customSwatches.map((c) => (
+          <button
+            key={c}
+            onClick={() => onChange(c)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setCustomSwatches(customSwatches.filter((s) => s !== c));
+            }}
+            title="Right-click to remove"
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              background: c,
+              border: value === c ? '2px solid var(--accent-primary)' : '1px solid var(--border-default)',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          />
+        ))}
+        <button
+          onClick={() => {
+            if (customSwatches.includes(currentColor)) return;
+            setCustomSwatches([...customSwatches, currentColor]);
+          }}
+          title="Save current color to defaults"
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            background: 'var(--surface-card)',
+            border: '1px dashed var(--border-default)',
+            color: 'var(--text-muted)',
+            fontSize: 12,
+            lineHeight: 1,
+            cursor: 'pointer',
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
+          }}
+        >
+          +
+        </button>
       </div>
     </div>
   );
