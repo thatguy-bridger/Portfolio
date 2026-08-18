@@ -15,7 +15,7 @@ const TOPBAR_HEIGHT = 52;
 
 export function HomepageStudio() {
   const { signOut } = useAuth();
-  const { data, setData, status, publishing, hasUnpublished, handlePublish } = useSiteDraft();
+  const { data, setData, status, publishing, hasUnpublished, handlePublish, undo, redo, canUndo, canRedo } = useSiteDraft();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewingMobile, setPreviewingMobile] = useState(false);
 
@@ -71,6 +71,10 @@ export function HomepageStudio() {
         onPublish={handlePublish}
         onSignOut={signOut}
         onPreviewMobile={() => setPreviewingMobile(true)}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
       {previewingMobile && (
         <MobilePreviewModal
@@ -115,6 +119,10 @@ function Topbar({
   onPublish,
   onSignOut,
   onPreviewMobile,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: {
   status: SaveStatus;
   publishing: boolean;
@@ -122,6 +130,10 @@ function Topbar({
   onPublish: () => void;
   onSignOut: () => void;
   onPreviewMobile: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }) {
   const label = { loading: 'Loading…', idle: 'Up to date', saving: 'Saving…', saved: 'Saved', error: 'Save failed' }[status];
   return (
@@ -155,6 +167,22 @@ function Topbar({
         {hasUnpublished && !publishing && <span style={{ color: 'var(--orange-500)', fontWeight: 600, whiteSpace: 'nowrap' }}>Unpublished changes</span>}
       </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+        <Button variant="ghost" size="sm" onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl/Cmd+Z)">
+          ↶
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl/Cmd+Shift+Z)">
+          ↷
+        </Button>
+        <Link to="/edit/preview" target="_blank" rel="noopener" style={{ textDecoration: 'none' }}>
+          <Button variant="ghost" size="sm">
+            👁 Preview as visitor
+          </Button>
+        </Link>
+        <Link to="/edit/history" style={{ textDecoration: 'none' }}>
+          <Button variant="ghost" size="sm">
+            History
+          </Button>
+        </Link>
         <Button variant="ghost" size="sm" onClick={onPreviewMobile}>
           📱 Preview mobile
         </Button>

@@ -9,6 +9,8 @@ import { WidgetStudio } from './routes/WidgetStudio';
 import { HomepageStudio } from './routes/HomepageStudio';
 import { Inbox } from './routes/Inbox';
 import { ProjectPage } from './routes/ProjectPage';
+import { PreviewAsVisitor } from './routes/PreviewAsVisitor';
+import { VersionHistory } from './routes/VersionHistory';
 
 export default function App() {
   return (
@@ -47,6 +49,22 @@ export default function App() {
               element={
                 <RequireAuth>
                   <HomepageStudio />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/edit/preview"
+              element={
+                <RequireAuth>
+                  <PreviewAsVisitor />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/edit/history"
+              element={
+                <RequireAuth>
+                  <VersionHistory />
                 </RequireAuth>
               }
             />

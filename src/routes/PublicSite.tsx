@@ -13,18 +13,13 @@ import { subscribePublished } from '../firebase/site';
 import { useApplyThemeFromData } from '../design-system/useApplyThemeFromData';
 import { useAuth } from '../auth/AuthProvider';
 
-export function PublicSite() {
-  const [data, setData] = useState<SiteData>(DEFAULT_SITE_DATA);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (!isFirebaseConfigured) return;
-    const unsub = subscribePublished((site) => {
-      if (site) setData(site.data);
-    });
-    return unsub;
-  }, []);
-
+/**
+ * Renders the homepage's actual content (scroll progress + main sections)
+ * for a given SiteData — no data fetching, no edit chrome. Shared between
+ * the real public site (fed published data) and the "preview as visitor"
+ * route (fed draft data), so the two can never visually drift apart.
+ */
+export function SiteBody({ data }: { data: SiteData }) {
   useApplyThemeFromData(data);
 
   // Scroll-snap is opt-in per group (HomepageGroup.scrollSnap); it only takes effect at the
@@ -63,6 +58,25 @@ export function PublicSite() {
           </>
         )}
       </main>
+    </>
+  );
+}
+
+export function PublicSite() {
+  const [data, setData] = useState<SiteData>(DEFAULT_SITE_DATA);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    const unsub = subscribePublished((site) => {
+      if (site) setData(site.data);
+    });
+    return unsub;
+  }, []);
+
+  return (
+    <>
+      <SiteBody data={data} />
       <Link
         to={user ? '/edit' : '/login'}
         style={{

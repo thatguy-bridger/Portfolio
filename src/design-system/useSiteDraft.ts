@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getDraft, getPublished, publishDraft, saveDraft } from '../firebase/site';
+import { useUndoHistory } from './useUndoHistory';
 import type { SiteData } from '../data/siteData';
 
 export type SaveStatus = 'loading' | 'idle' | 'saving' | 'saved' | 'error';
@@ -9,9 +10,15 @@ export type SaveStatus = 'loading' | 'idle' | 'saving' | 'saved' | 'error';
  * unpublished) once, then debounced-autosaves any change back to it. Used
  * by every editing surface — the Builder and the Widget Studio alike —
  * since they're all just different views onto the same SiteData document.
+ *
+ * The draft also carries an in-memory undo/redo history (see
+ * useUndoHistory) — per-session only, resetting on reload same as any
+ * other editor's undo stack. Durable rollback across sessions is what
+ * publish-time version history (see firebase/site.ts's siteVersions) is
+ * for instead.
  */
 export function useSiteDraft() {
-  const [data, setData] = useState<SiteData | null>(null);
+  const { value: data, set: setData, undo, redo, canUndo, canRedo } = useUndoHistory<SiteData>(null, { bindKeyboard: true });
   const [status, setStatus] = useState<SaveStatus>('loading');
   const [publishedJson, setPublishedJson] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -25,6 +32,7 @@ export function useSiteDraft() {
       setPublishedJson(published ? JSON.stringify(published.data) : null);
       setStatus('idle');
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -62,5 +70,5 @@ export function useSiteDraft() {
     }
   }
 
-  return { data, setData, status, publishing, hasUnpublished, handlePublish };
+  return { data, setData, status, publishing, hasUnpublished, handlePublish, undo, redo, canUndo, canRedo };
 }

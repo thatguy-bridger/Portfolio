@@ -1,9 +1,25 @@
-import { doc, getDoc, onSnapshot, serverTimestamp, setDoc, type Timestamp } from 'firebase/firestore';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  type Timestamp,
+} from 'firebase/firestore';
 import { getFirebaseDb } from './client';
 import { DEFAULT_SITE_DATA, newBlockId, newPageId, type CustomPage, type SiteData, type SiteTile } from '../data/siteData';
 
 const DRAFT_DOC = 'sites/draft';
 const PUBLISHED_DOC = 'sites/published';
+const VERSIONS_COLLECTION = 'siteVersions';
+/** Keeps version history bounded — each publish reads/prunes at most this many docs, so the feature can't quietly run up Firestore usage over a long-lived site. */
+const MAX_VERSIONS = 20;
 
 export interface StoredSite {
   data: SiteData;
@@ -122,5 +138,29 @@ export function subscribePublished(onChange: (site: StoredSite | null) => void) 
 }
 
 export async function publishDraft(data: SiteData): Promise<void> {
-  await setDoc(doc(getFirebaseDb(), PUBLISHED_DOC), { ...data, publishedAt: serverTimestamp() });
+  const db = getFirebaseDb();
+  await setDoc(doc(db, PUBLISHED_DOC), { ...data, publishedAt: serverTimestamp() });
+  await addDoc(collection(db, VERSIONS_COLLECTION), { data, publishedAt: serverTimestamp() });
+  await pruneOldVersions();
+}
+
+async function pruneOldVersions(): Promise<void> {
+  const snap = await getDocs(query(collection(getFirebaseDb(), VERSIONS_COLLECTION), orderBy('publishedAt', 'desc')));
+  const excess = snap.docs.slice(MAX_VERSIONS);
+  await Promise.all(excess.map((d) => deleteDoc(d.ref)));
+}
+
+export interface SiteVersion {
+  id: string;
+  data: SiteData;
+  publishedAt: Timestamp | null;
+}
+
+/** Up to MAX_VERSIONS most recent publishes, newest first — this is the entire version history, there's never more than that many docs to read. */
+export async function listVersions(): Promise<SiteVersion[]> {
+  const snap = await getDocs(query(collection(getFirebaseDb(), VERSIONS_COLLECTION), orderBy('publishedAt', 'desc')));
+  return snap.docs.map((d) => {
+    const raw = d.data();
+    return { id: d.id, data: normalizeSiteData(raw), publishedAt: (raw.publishedAt as Timestamp | undefined) ?? null };
+  });
 }

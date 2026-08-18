@@ -22,7 +22,7 @@ const TOPBAR_HEIGHT = 52;
 export function Builder() {
   const { signOut } = useAuth();
   const theme = useTheme();
-  const { data, setData, status, publishing, hasUnpublished, handlePublish } = useSiteDraft();
+  const { data, setData, status, publishing, hasUnpublished, handlePublish, undo, redo, canUndo, canRedo } = useSiteDraft();
   const { unreadCount } = useMessages();
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -153,6 +153,18 @@ export function Builder() {
           <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             View live site
           </Link>
+          <Link to="/edit/preview" target="_blank" rel="noopener" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Preview draft
+          </Link>
+          <Link to="/edit/history" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            History
+          </Link>
+          <Button variant="ghost" size="sm" onClick={undo} disabled={!canUndo} title="Undo (Ctrl/Cmd+Z)">
+            ↶
+          </Button>
+          <Button variant="ghost" size="sm" onClick={redo} disabled={!canRedo} title="Redo (Ctrl/Cmd+Shift+Z)">
+            ↷
+          </Button>
           <Button variant="primary" size="sm" onClick={handlePublish} disabled={publishing || !hasUnpublished}>
             {publishing ? 'Publishing…' : 'Publish'}
           </Button>
