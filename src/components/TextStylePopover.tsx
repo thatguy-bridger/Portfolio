@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import type { CSSProperties } from 'react';
 import { FONT_LIBRARY, loadFont } from '../design-system/fonts';
-import { useClickAway } from '../design-system/useClickAway';
+import { ToolbarDropdown } from './Popover';
+import { ColorPickerPanel } from './ColorPicker';
 import type { TextBoxShape, TextEffects } from '../data/siteData';
+
+export { ToolbarDropdown } from './Popover';
 
 const SHAPE_RADIUS: Record<TextBoxShape, number> = { none: 0, rounded: 8, pill: 999, square: 0 };
 
@@ -26,8 +28,6 @@ export function effectsToStyle(e?: TextEffects): CSSProperties {
   };
 }
 
-const SWATCHES = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#6366f1', '#a855f7', '#ec4899', '#0f172a', '#ffffff'];
-
 function ToggleButton({ active, label, title, onClick }: { active: boolean; label: string; title: string; onClick: () => void }) {
   return (
     <button
@@ -48,137 +48,6 @@ function ToggleButton({ active, label, title, onClick }: { active: boolean; labe
     >
       {label}
     </button>
-  );
-}
-
-/**
- * One Google-Docs-style toolbar trigger: a small button showing the current
- * value that opens its own focused dropdown panel, instead of everything
- * living in one big popover. Portaled to document.body with fixed
- * positioning so it isn't clipped inside a modal's scroll area.
- */
-export function ToolbarDropdown({ trigger, title, width = 200, children }: { trigger: ReactNode; title: string; width?: number; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  function toggle() {
-    if (!open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 6, left: r.left });
-    }
-    setOpen((o) => !o);
-  }
-  const close = () => setOpen(false);
-  useClickAway(open, [btnRef, panelRef], close);
-
-  useEffect(() => {
-    if (!open) return;
-    document.addEventListener('scroll', close, true);
-    window.addEventListener('resize', close);
-    return () => {
-      document.removeEventListener('scroll', close, true);
-      window.removeEventListener('resize', close);
-    };
-  }, [open]);
-
-  return (
-    <span style={{ display: 'inline-block' }}>
-      <button
-        ref={btnRef}
-        onClick={toggle}
-        title={title}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 3,
-          border: 'none',
-          borderRadius: 6,
-          padding: '3px 6px',
-          fontSize: 12,
-          cursor: 'pointer',
-          background: 'var(--surface-card)',
-          color: 'var(--text-body)',
-          height: 26,
-        }}
-      >
-        {trigger}
-        <span style={{ fontSize: 8, opacity: 0.6 }}>▾</span>
-      </button>
-      {open &&
-        pos &&
-        createPortal(
-          <div
-            ref={panelRef}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'fixed',
-              top: pos.top,
-              left: pos.left,
-              zIndex: 300,
-              width,
-              maxHeight: 320,
-              overflowY: 'auto',
-              background: 'var(--surface-glass)',
-              backdropFilter: 'var(--blur-glass)',
-              WebkitBackdropFilter: 'var(--blur-glass)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: 'var(--shadow-lg)',
-              padding: 10,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              fontFamily: 'var(--font-body)',
-            }}
-          >
-            {children}
-          </div>,
-          document.body,
-        )}
-    </span>
-  );
-}
-
-export function ColorGrid({ value, onPick, onClear }: { value?: string; onPick: (c: string) => void; onClear: () => void }) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, alignItems: 'center' }}>
-      <button
-        onClick={onClear}
-        title="None"
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: '50%',
-          background:
-            'repeating-conic-gradient(var(--surface-card) 0% 25%, var(--surface-panel) 0% 50%) 50% / 8px 8px',
-          border: !value ? '2px solid var(--accent-primary)' : '1px solid var(--border-default)',
-          cursor: 'pointer',
-        }}
-      />
-      {SWATCHES.map((c) => (
-        <button
-          key={c}
-          onClick={() => onPick(c)}
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: '50%',
-            background: c,
-            border: value === c ? '2px solid var(--accent-primary)' : '1px solid var(--border-default)',
-            cursor: 'pointer',
-          }}
-        />
-      ))}
-      <input
-        type="color"
-        value={value || '#000000'}
-        onChange={(e) => onPick(e.target.value)}
-        title="Custom color"
-        style={{ width: 24, height: 24, padding: 0, border: 'none', borderRadius: 4, cursor: 'pointer' }}
-      />
-    </div>
   );
 }
 
@@ -260,7 +129,7 @@ export function TextStylePopover({ value, onChange }: { value?: TextEffects; onC
         }
       >
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Text color</div>
-        <ColorGrid value={v.color} onPick={(c) => patch({ color: c })} onClear={() => patch({ color: undefined })} />
+        <ColorPickerPanel value={v.color} onChange={(c) => patch({ color: c })} onClear={() => patch({ color: undefined })} />
       </ToolbarDropdown>
 
       <ToolbarDropdown
@@ -274,7 +143,11 @@ export function TextStylePopover({ value, onChange }: { value?: TextEffects; onC
         }
       >
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Background color</div>
-        <ColorGrid value={v.backgroundColor} onPick={(c) => patch({ backgroundColor: c, boxShape: v.boxShape ?? 'rounded' })} onClear={() => patch({ backgroundColor: undefined })} />
+        <ColorPickerPanel
+          value={v.backgroundColor}
+          onChange={(c) => patch({ backgroundColor: c, boxShape: v.boxShape ?? 'rounded' })}
+          onClear={() => patch({ backgroundColor: undefined })}
+        />
       </ToolbarDropdown>
 
       <ToolbarDropdown title="Textbox shape" width={150} trigger={<span>Shape</span>}>

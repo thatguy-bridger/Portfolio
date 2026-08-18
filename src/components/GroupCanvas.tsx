@@ -3,7 +3,8 @@ import { BlockContent, AddBlockMenu, newBlock } from './BlockContent';
 import { WorkGrid } from '../sections/WorkGrid';
 import { Button } from './ui/Button';
 import { ImageInput } from './ImageInput';
-import { ToolbarDropdown, ColorGrid } from './TextStylePopover';
+import { ToolbarDropdown } from './Popover';
+import { ColorPickerPanel } from './ColorPicker';
 import {
   newBlockId,
   newGroupBlockId,
@@ -310,7 +311,7 @@ export function GroupCanvas({
 
           <ToolbarDropdown title="Style" width={220} trigger={<span>Style</span>}>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Background color</div>
-            <ColorGrid value={primaryStyle.background} onPick={(c) => patchSelectedStyle({ background: c })} onClear={() => patchSelectedStyle({ background: undefined })} />
+            <ColorPickerPanel value={primaryStyle.background} onChange={(c) => patchSelectedStyle({ background: c })} onClear={() => patchSelectedStyle({ background: undefined })} />
 
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4 }}>Background image</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -324,7 +325,7 @@ export function GroupCanvas({
 
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4 }}>Border</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ColorGrid value={primaryStyle.borderColor} onPick={(c) => patchSelectedStyle({ borderColor: c })} onClear={() => patchSelectedStyle({ borderColor: undefined })} />
+              <ColorPickerPanel value={primaryStyle.borderColor} onChange={(c) => patchSelectedStyle({ borderColor: c })} onClear={() => patchSelectedStyle({ borderColor: undefined })} />
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
               Width

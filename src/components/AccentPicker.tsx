@@ -1,5 +1,6 @@
 import { ACCENT_PRESETS } from '../design-system/accent';
 import { useTheme } from '../design-system/theme';
+import { ColorPicker } from './ColorPicker';
 
 export function AccentPicker() {
   const { accentId, setAccentPreset, customAccentHex, setCustomAccent } = useTheme();
@@ -24,29 +25,25 @@ export function AccentPicker() {
             }}
           />
         ))}
-        <label
-          title="Custom color"
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            cursor: 'pointer',
-            border: accentId === 'custom' ? '2px solid var(--text-heading)' : '2px solid var(--border-strong)',
-            background:
-              accentId === 'custom'
-                ? customAccentHex
-                : 'conic-gradient(red,orange,yellow,green,blue,violet,red)',
-            display: 'inline-block',
-            position: 'relative',
-          }}
-        >
-          <input
-            type="color"
-            value={customAccentHex}
-            onChange={(e) => setCustomAccent(e.target.value)}
-            style={{ opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-          />
-        </label>
+        <ColorPicker
+          value={customAccentHex}
+          onChange={setCustomAccent}
+          allowAlpha={false}
+          trigger={
+            <span
+              title="Custom color"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                border: accentId === 'custom' ? '2px solid var(--text-heading)' : '2px solid var(--border-strong)',
+                boxShadow: accentId === 'custom' ? '0 0 0 2px var(--surface-panel)' : 'none',
+                background: accentId === 'custom' ? customAccentHex : 'conic-gradient(red,orange,yellow,green,blue,violet,red)',
+                display: 'inline-block',
+              }}
+            />
+          }
+        />
       </div>
       <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
         Pick a preset, or the last swatch for any custom color.

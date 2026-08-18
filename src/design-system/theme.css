@@ -64,3 +64,14 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--accent-primary);
   color: #fff;
 }
+
+/* Hides native spin buttons on the color picker's RGBA fields — at their compact width, the
+   browser's spinner arrows crowd out the digits of 3-digit values (e.g. "255"). */
+.cp-number-field {
+  -moz-appearance: textfield;
+}
+.cp-number-field::-webkit-outer-spin-button,
+.cp-number-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GroupCanvas } from '../components/GroupCanvas';
 import { ImageInput } from '../components/ImageInput';
+import { ColorPicker } from '../components/ColorPicker';
 import { Button } from '../components/ui/Button';
 import { GROUP_TEMPLATES } from '../data/groupTemplates';
 import { newGroupId, type CustomPage, type HomepageGroup, type SiteTile, type Widget } from '../data/siteData';
@@ -341,7 +342,7 @@ export function GroupEditor({
         />
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
           Background
-          <input type="color" value={group.background ?? '#ffffff'} onChange={(e) => onChange({ background: e.target.value })} style={{ width: 30, height: 26, padding: 0, border: 'none', borderRadius: 4, cursor: 'pointer' }} />
+          <ColorPicker value={group.background} onChange={(c) => onChange({ background: c })} onClear={() => onChange({ background: undefined })} />
         </label>
         <ImageInput
           label={group.backgroundImage ? 'Replace background image' : '+ Background image'}

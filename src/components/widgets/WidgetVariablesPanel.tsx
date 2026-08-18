@@ -1,4 +1,5 @@
 import { ImageInput } from '../ImageInput';
+import { ColorPicker } from '../ColorPicker';
 import { newWidgetVariableId, type WidgetVariable, type WidgetVariableType } from '../../data/siteData';
 
 const TYPE_LABEL: Record<WidgetVariableType, string> = {
@@ -13,7 +14,7 @@ const TYPE_LABEL: Record<WidgetVariableType, string> = {
 export function ValueInput({ type, value, onChange }: { type: WidgetVariableType; value: string; onChange: (v: string) => void }) {
   switch (type) {
     case 'color':
-      return <input type="color" value={value || '#6366f1'} onChange={(e) => onChange(e.target.value)} style={{ width: 36, height: 30, padding: 0, border: 'none', borderRadius: 6, cursor: 'pointer' }} />;
+      return <ColorPicker value={value || '#6366f1'} onChange={onChange} size={28} />;
     case 'boolean':
       return (
         <input

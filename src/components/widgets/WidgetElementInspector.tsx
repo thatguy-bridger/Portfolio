@@ -1,6 +1,7 @@
 import { ImageInput } from '../ImageInput';
 import { ImageCropEditor } from '../ImageCropEditor';
 import { TextStylePopover } from '../TextStylePopover';
+import { ColorPicker } from '../ColorPicker';
 import type { WidgetElement, WidgetVariable } from '../../data/siteData';
 
 const selectStyle: React.CSSProperties = {
@@ -90,12 +91,7 @@ export function WidgetElementInspector({
       {!element.boundVariableId && element.type === 'shape' && (
         <label style={label}>
           Fill color
-          <input
-            type="color"
-            value={element.fill || '#6366f1'}
-            onChange={(e) => onChange({ fill: e.target.value })}
-            style={{ width: 40, height: 30, padding: 0, border: 'none', borderRadius: 6, cursor: 'pointer' }}
-          />
+          <ColorPicker value={element.fill || '#6366f1'} onChange={(c) => onChange({ fill: c })} size={28} />
         </label>
       )}
 
