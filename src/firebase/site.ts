@@ -13,7 +13,7 @@ import {
   type Timestamp,
 } from 'firebase/firestore';
 import { getFirebaseDb } from './client';
-import { DEFAULT_SITE_DATA, newBlockId, newPageId, type CustomPage, type SiteData, type SiteTile } from '../data/siteData';
+import { blocksToGroup, DEFAULT_SITE_DATA, newBlockId, newPageId, type CustomPage, type HomepageGroup, type SiteData, type SiteTile } from '../data/siteData';
 
 const DRAFT_DOC = 'sites/draft';
 const PUBLISHED_DOC = 'sites/published';
@@ -49,19 +49,17 @@ interface LegacyProjectPage {
   elements?: Array<{ type: 'text' | 'image'; content?: string; src?: string; alt?: string; crop?: unknown }>;
 }
 
-/** One-time upgrade: old TileElement-based project pages become PageBlock-based CustomPages. */
+/** One-time upgrade: old TileElement-based project pages become a single stacked group, same as any other legacy flat-block page. */
 function migrateLegacyProjectPages(raw: unknown): CustomPage[] {
   if (!Array.isArray(raw)) return [];
-  return (raw as LegacyProjectPage[]).map((p) => ({
-    id: newPageId(),
-    path: p.slug,
-    title: p.title,
-    blocks: (p.elements ?? []).map((el) =>
+  return (raw as LegacyProjectPage[]).map((p) => {
+    const blocks = (p.elements ?? []).map((el) =>
       el.type === 'text'
         ? { id: newBlockId(), type: 'text' as const, content: el.content, size: 'md' as const }
         : { id: newBlockId(), type: 'image' as const, src: el.src, alt: el.alt, crop: el.crop as never },
-    ),
-  }));
+    );
+    return { id: newPageId(), path: p.slug, title: p.title, groups: [blocksToGroup(blocks)] };
+  });
 }
 
 /** Migrates any button blocks' links (slug → path) within a block array. */
@@ -70,12 +68,30 @@ function migrateBlocks(raw: unknown): unknown {
   return raw.map((b) => (b && typeof b === 'object' && 'link' in b ? { ...b, link: migrateLink((b as { link: unknown }).link) } : b));
 }
 
-/** One-time upgrade: pages saved before paths could have slashes carried a flat `slug` instead of `path`. */
+/** Migrates every group's blocks' links (slug → path) — groups nest a PageBlock inside each GroupBlock, one level deeper than a flat block list. */
+function migrateGroups(raw: unknown): HomepageGroup[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as Array<HomepageGroup & { blocks: Array<{ block?: unknown }> }>).map((g) => ({
+    ...g,
+    blocks: (g.blocks ?? []).map((gb) =>
+      gb && typeof gb === 'object' && 'block' in gb && gb.block && typeof gb.block === 'object' && 'link' in gb.block
+        ? { ...gb, block: { ...gb.block, link: migrateLink((gb.block as { link: unknown }).link) } }
+        : gb,
+    ),
+  })) as HomepageGroup[];
+}
+
+/** One-time upgrade: pages saved before paths could have slashes carried a flat `slug` instead of `path`; pages saved before every page shared the homepage's group/canvas system carried a flat `blocks` list instead of `groups`. */
 function migratePages(raw: unknown): CustomPage[] {
   if (!Array.isArray(raw)) return [];
-  return (raw as Array<CustomPage & { slug?: string }>).map((p) => {
-    const { slug, ...rest } = p;
-    return { ...(rest.path ? rest : { ...rest, path: slug ?? '' }), blocks: migrateBlocks(rest.blocks) } as CustomPage;
+  return (raw as Array<CustomPage & { slug?: string; blocks?: unknown }>).map((p) => {
+    const { slug, blocks, ...rest } = p;
+    const path = rest.path ? rest.path : (slug ?? '');
+    // A present-but-empty `groups` array means this page is already in the new format and
+    // genuinely has zero sections — that must NOT fall through to the legacy-blocks branch
+    // below, or every empty page would grow a spurious "Page content" group on every reload.
+    const groups = Array.isArray(rest.groups) ? migrateGroups(rest.groups) : [blocksToGroup(migrateBlocks(blocks ?? []) as never)];
+    return { ...rest, path, groups } as CustomPage;
   });
 }
 
@@ -91,7 +107,7 @@ function normalizeSiteData(raw: Record<string, unknown>): SiteData {
   const pages = Array.isArray(rest.pages) ? migratePages(rest.pages) : migrateLegacyProjectPages(rest.projectPages);
   const blocks = migrateBlocks(Array.isArray(rest.blocks) ? rest.blocks : []) as SiteData['blocks'];
   const widgets = Array.isArray(rest.widgets) ? rest.widgets : [];
-  const homepageGroups = Array.isArray(rest.homepageGroups) ? rest.homepageGroups : [];
+  const homepageGroups = migrateGroups(rest.homepageGroups);
   const useFreeformHomepage = typeof rest.useFreeformHomepage === 'boolean' ? rest.useFreeformHomepage : false;
   const { projectPages: _legacy, ...withoutLegacy } = rest;
   return { ...DEFAULT_SITE_DATA, ...withoutLegacy, tiles, pages, blocks, widgets, homepageGroups, useFreeformHomepage } as SiteData;

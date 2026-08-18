@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Hero } from '../sections/Hero';
-import { WorkGrid } from '../sections/WorkGrid';
-import { PageContent } from '../sections/PageContent';
-import { About } from '../sections/About';
-import { Contact } from '../sections/Contact';
-import { CustomizePanel } from '../components/CustomizePanel';
 import { PageTree } from '../components/PageTree';
-import { CustomPageCanvas } from '../components/CustomPageCanvas';
+import { PageEditor } from '../components/PageEditor';
+import { Editable } from '../components/Editable';
+import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { newPageId, uniquePath, type SiteData } from '../data/siteData';
+import { CustomizePanel } from '../components/CustomizePanel';
+import { RESERVED_PATHS, newPageId, uniquePath, type CustomPage } from '../data/siteData';
 import { useApplyThemeFromData } from '../design-system/useApplyThemeFromData';
 import { useIsNarrow } from '../design-system/useIsNarrow';
 import { useSiteDraft, type SaveStatus } from '../design-system/useSiteDraft';
@@ -19,6 +16,12 @@ import { useAuth } from '../auth/AuthProvider';
 
 const TOPBAR_HEIGHT = 52;
 
+/**
+ * The one editor screen. The homepage and every custom page share the same
+ * topbar, the same sidebar, and the same WYSIWYG canvas (PageEditor) —
+ * clicking something in the sidebar only ever swaps which page's sections
+ * are showing, never which abilities are available.
+ */
 export function Builder() {
   const { signOut } = useAuth();
   const theme = useTheme();
@@ -55,7 +58,7 @@ export function Builder() {
 
   function createPage() {
     if (!data) return;
-    const page = { id: newPageId(), path: uniquePath('untitled-page', data.pages), title: 'Untitled page', blocks: [] };
+    const page: CustomPage = { id: newPageId(), path: uniquePath('untitled-page', data.pages), title: 'Untitled page', groups: [] };
     setData({ ...data, pages: [...data.pages, page] });
     setActivePageId(page.id);
     setSidebarOpen(false);
@@ -66,7 +69,7 @@ export function Builder() {
     setSidebarOpen(false);
   }
 
-  function updatePage(id: string, patch: Partial<SiteData['pages'][number]>) {
+  function updatePage(id: string, patch: Partial<CustomPage>) {
     if (!data) return;
     setData({ ...data, pages: data.pages.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
   }
@@ -135,12 +138,6 @@ export function Builder() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-          <Link
-            to="/edit/homepage"
-            style={{ color: data.useFreeformHomepage ? 'var(--green-600)' : 'var(--text-muted)', fontSize: 13, fontWeight: data.useFreeformHomepage ? 700 : 400, textDecoration: 'none', whiteSpace: 'nowrap' }}
-          >
-            Homepage{data.useFreeformHomepage ? ' (freeform)' : ''}
-          </Link>
           <Link to="/edit/widgets" style={{ color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             Widgets{data.widgets.length > 0 ? ` (${data.widgets.length})` : ''}
           </Link>
@@ -195,40 +192,16 @@ export function Builder() {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           {activePage ? (
-            <CustomPageCanvas
-              page={activePage}
-              pages={data.pages}
-              widgets={data.widgets}
-              onChange={(patch) => updatePage(activePage.id, patch)}
-              onDelete={() => deletePage(activePage.id)}
-            />
-          ) : data.useFreeformHomepage ? (
-            <div
-              style={{
-                margin: '40px 24px',
-                padding: '24px',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px dashed var(--border-strong)',
-                textAlign: 'center',
-                color: 'var(--text-muted)',
-                fontSize: 14,
-              }}
-            >
-              Your live homepage is using freeform sections now — this classic view is no longer what's published.{' '}
-              <Link to="/edit/homepage" style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
-                Edit it in Homepage Studio
-              </Link>
-              .
-            </div>
-          ) : (
-            <>
-              <Hero hero={data.hero} editable onChange={(hero) => setData({ ...data, hero })} />
-              <WorkGrid tiles={data.tiles} pages={data.pages} editable onChange={(tiles) => setData({ ...data, tiles })} />
-              <PageContent blocks={data.blocks} editable pages={data.pages} widgets={data.widgets} onChange={(blocks) => setData({ ...data, blocks })} />
-              <About about={data.about} editable onChange={(about) => setData({ ...data, about })} />
-              <Contact contact={data.contact} editable onChange={(contact) => setData({ ...data, contact })} />
-            </>
-          )}
+            <PageMeta page={activePage} pages={data.pages} onChange={(patch) => updatePage(activePage.id, patch)} onDelete={() => deletePage(activePage.id)} />
+          ) : null}
+          <PageEditor
+            groups={activePage ? activePage.groups : data.homepageGroups}
+            onChange={(groups) => (activePage ? updatePage(activePage.id, { groups }) : setData({ ...data, homepageGroups: groups }))}
+            widgets={data.widgets}
+            pages={data.pages}
+            tiles={data.tiles}
+            onTilesChange={(tiles) => setData({ ...data, tiles })}
+          />
         </div>
       </div>
 
@@ -258,6 +231,61 @@ export function Builder() {
 
       <CustomizePanel />
     </>
+  );
+}
+
+/** Title (shown to visitors, so it's an inline Editable like everything else) + path/delete meta for the active custom page — not part of the WYSIWYG canvas, since path/delete aren't visitor-facing content. */
+function PageMeta({
+  page,
+  pages,
+  onChange,
+  onDelete,
+}: {
+  page: CustomPage;
+  pages: CustomPage[];
+  onChange: (patch: Partial<CustomPage>) => void;
+  onDelete: () => void;
+}) {
+  const reserved = RESERVED_PATHS.has(page.path);
+  return (
+    <div style={{ padding: '32px 16px 0', maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <Editable
+            editable
+            as="h1"
+            value={page.title}
+            onCommit={(title) => onChange({ title })}
+            style={{ fontSize: 40, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 10, display: 'block' }}
+          />
+          <div style={{ maxWidth: 320 }}>
+            <Input
+              label="Page path"
+              value={page.path}
+              onChange={(e) => onChange({ path: e.target.value.toLowerCase().replace(/[^a-z0-9/-]+/g, '-') })}
+              onBlur={() => onChange({ path: uniquePath(page.path, pages, page.id) })}
+            />
+          </div>
+          <div style={{ fontSize: 12, color: reserved ? 'var(--red-500)' : 'var(--text-muted)', marginTop: 6, fontFamily: 'var(--font-body)' }}>
+            /{page.path || '…'}
+            {' · '}
+            <a href={`/${page.path}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>
+              Preview ↗
+            </a>
+            {reserved && ' — this path is reserved for the app itself, pick another'}
+          </div>
+        </div>
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => {
+            if (window.confirm(`Delete "${page.title || 'this page'}"? This can't be undone.`)) onDelete();
+          }}
+        >
+          Delete page
+        </Button>
+      </div>
+    </div>
   );
 }
 

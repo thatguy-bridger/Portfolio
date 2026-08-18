@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from './design-system/theme';
 import { AuthProvider } from './auth/AuthProvider';
 import { RequireAuth } from './auth/RequireAuth';
@@ -6,7 +6,6 @@ import { LoginPage } from './auth/LoginPage';
 import { PublicSite } from './routes/PublicSite';
 import { Builder } from './routes/Builder';
 import { WidgetStudio } from './routes/WidgetStudio';
-import { HomepageStudio } from './routes/HomepageStudio';
 import { Inbox } from './routes/Inbox';
 import { ProjectPage } from './routes/ProjectPage';
 import { PreviewAsVisitor } from './routes/PreviewAsVisitor';
@@ -44,14 +43,8 @@ export default function App() {
                 </RequireAuth>
               }
             />
-            <Route
-              path="/edit/homepage"
-              element={
-                <RequireAuth>
-                  <HomepageStudio />
-                </RequireAuth>
-              }
-            />
+            {/* Homepage Studio is retired — the homepage is now just a pinned entry in the Builder's page sidebar. */}
+            <Route path="/edit/homepage" element={<Navigate to="/edit" replace />} />
             <Route
               path="/edit/preview"
               element={

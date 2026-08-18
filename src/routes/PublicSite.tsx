@@ -2,11 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ScrollProgress } from '../components/ScrollProgress';
 import { GroupRenderer } from '../components/GroupRenderer';
-import { Hero } from '../sections/Hero';
-import { WorkGrid } from '../sections/WorkGrid';
-import { PageContent } from '../sections/PageContent';
-import { About } from '../sections/About';
-import { Contact } from '../sections/Contact';
 import { DEFAULT_SITE_DATA, type SiteData } from '../data/siteData';
 import { isFirebaseConfigured } from '../firebase/client';
 import { subscribePublished } from '../firebase/site';
@@ -14,18 +9,19 @@ import { useApplyThemeFromData } from '../design-system/useApplyThemeFromData';
 import { useAuth } from '../auth/AuthProvider';
 
 /**
- * Renders the homepage's actual content (scroll progress + main sections)
- * for a given SiteData — no data fetching, no edit chrome. Shared between
- * the real public site (fed published data) and the "preview as visitor"
- * route (fed draft data), so the two can never visually drift apart.
+ * Renders the homepage's actual content (scroll progress + freeform
+ * sections) for a given SiteData — no data fetching, no edit chrome.
+ * Shared between the real public site (fed published data) and the
+ * "preview as visitor" route (fed draft data), so the two can never
+ * visually drift apart. This is also exactly what the editor itself
+ * renders, just with editing turned on — one rendering path, everywhere.
  */
 export function SiteBody({ data }: { data: SiteData }) {
   useApplyThemeFromData(data);
 
   // Scroll-snap is opt-in per group (HomepageGroup.scrollSnap); it only takes effect at the
-  // document level once at least one visible group has it on, and never applies to the classic
-  // (non-freeform) homepage layout.
-  const snapEnabled = data.useFreeformHomepage && data.homepageGroups.some((g) => g.scrollSnap);
+  // document level once at least one visible group has it on.
+  const snapEnabled = data.homepageGroups.some((g) => g.scrollSnap);
   useEffect(() => {
     document.documentElement.style.scrollSnapType = snapEnabled ? 'y proximity' : '';
     return () => {
@@ -33,30 +29,13 @@ export function SiteBody({ data }: { data: SiteData }) {
     };
   }, [snapEnabled]);
 
-  const classicSections = [
-    { id: 'hero', label: 'Intro' },
-    { id: 'work', label: 'Work' },
-    ...(data.blocks.length > 0 ? [{ id: 'content', label: 'More' }] : []),
-    { id: 'about', label: 'About' },
-    { id: 'contact', label: 'Contact' },
-  ];
-  const freeformSections = data.homepageGroups.map((g) => ({ id: g.id, label: g.name }));
+  const sections = data.homepageGroups.map((g) => ({ id: g.id, label: g.name }));
 
   return (
     <>
-      <ScrollProgress sections={data.useFreeformHomepage ? freeformSections : classicSections} />
+      <ScrollProgress sections={sections} />
       <main>
-        {data.useFreeformHomepage ? (
-          <GroupRenderer groups={data.homepageGroups} widgets={data.widgets} pages={data.pages} tiles={data.tiles} />
-        ) : (
-          <>
-            <Hero hero={data.hero} />
-            <WorkGrid tiles={data.tiles} />
-            <PageContent blocks={data.blocks} widgets={data.widgets} />
-            <About about={data.about} />
-            <Contact contact={data.contact} />
-          </>
-        )}
+        <GroupRenderer groups={data.homepageGroups} widgets={data.widgets} pages={data.pages} tiles={data.tiles} />
       </main>
     </>
   );

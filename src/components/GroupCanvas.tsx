@@ -161,6 +161,7 @@ export function GroupCanvas({
 }) {
   const [containerRef, containerWidth] = useElementWidth();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [guides, setGuides] = useState<GuideLine[]>([]);
   const dragState = useRef<DragState | null>(null);
   const mobile = device === 'mobile';
@@ -557,14 +558,19 @@ export function GroupCanvas({
           position: 'relative',
           width: '100%',
           height: (canvasHeight + paddingY * 2) * scale,
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-default)',
-          background: background || 'var(--surface-card)',
+          // No border/card chrome here — this needs to render pixel-identical to GroupRenderer's
+          // own <section>, since the whole point of the unified editor is that what you see while
+          // editing is exactly what a visitor sees, not a boxed-in "editor" version of it.
+          background,
           backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           overflow: 'hidden',
           touchAction: 'none',
+          // A faint boundary hint so an unstyled section is still findable while editing — an
+          // outline rather than a border so it never affects layout or reads as a real fill.
+          outline: editable ? '1px dashed var(--border-default)' : 'none',
+          outlineOffset: -1,
         }}
       >
         <div
@@ -594,6 +600,8 @@ export function GroupCanvas({
             <div
               key={b.id}
               onPointerDown={(e) => editable && select(b.id, e.shiftKey)}
+              onMouseEnter={() => editable && setHoveredId(b.id)}
+              onMouseLeave={() => editable && setHoveredId((h) => (h === b.id ? null : h))}
               style={{
                 position: 'absolute',
                 left: getPos(b).x,
@@ -601,7 +609,10 @@ export function GroupCanvas({
                 width: getPos(b).w,
                 height: getPos(b).h,
                 zIndex: b.zIndex,
-                outline: selectedIds.includes(b.id) ? '2px solid var(--accent-primary)' : editable ? '1px dashed var(--border-strong)' : 'none',
+                // No permanent outline — unselected blocks render exactly like the live site. A
+                // light hover outline gives just enough discoverability that there's something
+                // here to click, without the boxed-in look of a dashed border on every block.
+                outline: selectedIds.includes(b.id) ? '2px solid var(--accent-primary)' : editable && hoveredId === b.id ? '1px solid var(--accent-primary)' : 'none',
                 outlineOffset: -1,
                 background: b.style?.background,
                 backgroundImage: b.style?.backgroundImage ? `url(${b.style.backgroundImage})` : undefined,

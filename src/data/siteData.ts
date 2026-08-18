@@ -225,7 +225,8 @@ export interface CustomPage {
   /** full URL path, no leading/trailing slash, e.g. "school/clubs/justserve" */
   path: string;
   title: string;
-  blocks: PageBlock[];
+  /** the same freeform group/canvas system the homepage uses — every page is edited and rendered the same way. */
+  groups: HomepageGroup[];
 }
 
 /** Routes a custom page's path can never occupy — they're the app's own static routes. */
@@ -314,6 +315,45 @@ export interface HomepageGroup {
   blocks: GroupBlock[];
   /** opts this section in as a scroll-snap stop — off by default; the page only applies snap-scrolling at all once at least one group has this on */
   scrollSnap?: boolean;
+}
+
+/** Reasonable starting heights (px) for a block dropped into a stacked, full-width column — used only to seed a position, never read again once the user has actually resized something. */
+const LEGACY_BLOCK_HEIGHT: Record<PageBlockType, number> = {
+  heading: 90,
+  text: 140,
+  image: 400,
+  button: 70,
+  divider: 40,
+  model3d: 420,
+  widget: 300,
+  video: 420,
+  gallery: 400,
+  embed: 400,
+  code: 300,
+  repeater: 400,
+  workgrid: 560,
+  'horizontal-scroll': 300,
+};
+
+/**
+ * One-time upgrade path: turns an old flat, linearly-ordered block list
+ * (from before every page shared the homepage's freeform group/canvas
+ * system) into a single stacked group, full-width, in the same order —
+ * so existing page content survives the migration untouched, just now
+ * freely repositionable like everything else.
+ */
+export function blocksToGroup(blocks: PageBlock[], name = 'Page content'): HomepageGroup {
+  const margin = 40;
+  const width = GROUP_CANVAS_WIDTH - margin * 2;
+  const gap = 24;
+  let cursor = margin;
+  const groupBlocks: GroupBlock[] = blocks.map((block, i) => {
+    const h = LEGACY_BLOCK_HEIGHT[block.type] ?? 200;
+    const position = { x: margin, y: cursor, w: width, h };
+    cursor += h + gap;
+    return { id: newGroupBlockId(), block, position, zIndex: i + 1 };
+  });
+  return { id: newGroupId(), name, blocks: groupBlocks };
 }
 
 export interface SiteData {
