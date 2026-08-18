@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { BlockContent } from './BlockContent';
-import { useElementWidth } from './GroupCanvas';
+import { useElementWidth, seedMobileLayout } from './GroupCanvas';
 import { WorkGrid } from '../sections/WorkGrid';
 import { useIsNarrow } from '../design-system/useIsNarrow';
 import { useTheme } from '../design-system/theme';
-import { GROUP_CANVAS_WIDTH, type CustomPage, type EntranceAnimation, type HomepageGroup, type SiteTile, type Widget } from '../data/siteData';
+import {
+  GROUP_CANVAS_WIDTH,
+  MOBILE_CANVAS_WIDTH,
+  type CustomPage,
+  type EntranceAnimation,
+  type GroupBlock,
+  type GroupBlockPosition,
+  type HomepageGroup,
+  type SiteTile,
+  type Widget,
+} from '../data/siteData';
 
-/** Below this width the scaled 1200px-design canvas would render blocks too small to read or tap — fall back to a simple stacked column instead. A real per-breakpoint mobile layout is a later phase. */
+/** Below this width the scaled 1200px-design canvas would render blocks too small to read or tap — a group falls back to a simple stacked column here unless it's had a mobile layout customized (see seedMobileLayout / GroupCanvas device="mobile"). */
 const MOBILE_BREAKPOINT = 700;
 
 function noop() {}
@@ -68,9 +78,27 @@ function Reveal({ animation, children }: { animation: EntranceAnimation | undefi
   );
 }
 
-/** Read-only rendering of the freeform homepage's sections, for the public site. */
-export function GroupRenderer({ groups, widgets, pages, tiles }: { groups: HomepageGroup[]; widgets: Widget[]; pages: CustomPage[]; tiles: SiteTile[] }) {
-  const narrow = useIsNarrow(MOBILE_BREAKPOINT);
+/**
+ * Read-only rendering of the freeform homepage's sections, for the public
+ * site. `forceNarrow` overrides the real viewport check — used by the
+ * Homepage Studio's mobile preview frame, which is narrower than the
+ * browser window it's rendered inside of.
+ */
+export function GroupRenderer({
+  groups,
+  widgets,
+  pages,
+  tiles,
+  forceNarrow,
+}: {
+  groups: HomepageGroup[];
+  widgets: Widget[];
+  pages: CustomPage[];
+  tiles: SiteTile[];
+  forceNarrow?: boolean;
+}) {
+  const windowNarrow = useIsNarrow(MOBILE_BREAKPOINT);
+  const narrow = forceNarrow ?? windowNarrow;
   return (
     <>
       {groups.map((g) => (
@@ -89,10 +117,11 @@ function GroupSection({ group, narrow, widgets, pages, tiles }: { group: Homepag
     backgroundPosition: 'center',
   };
 
-  if (narrow) {
-    const ordered = [...group.blocks]
-      .filter((b) => !b.hideOnMobile)
-      .sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
+  const visibleBlocks = group.blocks.filter((b) => !b.hideOnMobile);
+  const hasCustomMobileLayout = narrow && visibleBlocks.some((b) => b.mobilePosition);
+
+  if (narrow && !hasCustomMobileLayout) {
+    const ordered = [...visibleBlocks].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
     if (ordered.length === 0) return null;
     return (
       <section id={group.id} style={{ ...sectionStyle, padding: '48px 24px' }}>
@@ -111,43 +140,57 @@ function GroupSection({ group, narrow, widgets, pages, tiles }: { group: Homepag
     );
   }
 
-  if (group.blocks.length === 0) return null;
-  const scale = containerWidth > 0 ? Math.min(1, containerWidth / GROUP_CANVAS_WIDTH) : 1;
-  const maxBottom = group.blocks.reduce((m, b) => Math.max(m, b.position.y + b.position.h), 0);
+  if (visibleBlocks.length === 0) return null;
+
+  const canvasWidth = narrow ? MOBILE_CANVAS_WIDTH : GROUP_CANVAS_WIDTH;
+  const scale = containerWidth > 0 ? Math.min(1, containerWidth / canvasWidth) : 1;
   const paddingY = group.paddingY ?? 0;
+
+  let seeded: Record<string, GroupBlockPosition> | null = null;
+  function getPos(b: GroupBlock): GroupBlockPosition {
+    if (!narrow) return b.position;
+    if (b.mobilePosition) return b.mobilePosition;
+    seeded ??= seedMobileLayout(group.blocks);
+    return seeded[b.id] ?? b.position;
+  }
+
+  const maxBottom = visibleBlocks.reduce((m, b) => Math.max(m, getPos(b).y + getPos(b).h), 0);
   const canvasHeight = Math.max(group.minHeight ?? 0, maxBottom + 40);
 
   return (
     <section id={group.id} ref={containerRef} style={{ ...sectionStyle, position: 'relative', width: '100%', height: (canvasHeight + paddingY * 2) * scale, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: paddingY, left: 0, width: GROUP_CANVAS_WIDTH, height: canvasHeight, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-        {group.blocks.map((b) => (
-          <div
-            key={b.id}
-            style={{
-              position: 'absolute',
-              left: b.position.x,
-              top: b.position.y,
-              width: b.position.w,
-              height: b.position.h,
-              zIndex: b.zIndex,
-              background: b.style?.background,
-              backgroundImage: b.style?.backgroundImage ? `url(${b.style.backgroundImage})` : undefined,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              border: b.style?.borderWidth ? `${b.style.borderWidth}px solid ${b.style.borderColor ?? 'var(--border-default)'}` : undefined,
-              borderRadius: b.style?.borderRadius,
-              boxShadow: b.style?.shadow ? 'var(--shadow-lg)' : undefined,
-            }}
-          >
-            <Reveal animation={b.animation}>
-              {b.block.type === 'workgrid' ? (
-                <WorkGrid tiles={tiles} />
-              ) : (
-                <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
-              )}
-            </Reveal>
-          </div>
-        ))}
+      <div style={{ position: 'absolute', top: paddingY, left: 0, width: canvasWidth, height: canvasHeight, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+        {visibleBlocks.map((b) => {
+          const pos = getPos(b);
+          return (
+            <div
+              key={b.id}
+              style={{
+                position: 'absolute',
+                left: pos.x,
+                top: pos.y,
+                width: pos.w,
+                height: pos.h,
+                zIndex: b.zIndex,
+                background: b.style?.background,
+                backgroundImage: b.style?.backgroundImage ? `url(${b.style.backgroundImage})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                border: b.style?.borderWidth ? `${b.style.borderWidth}px solid ${b.style.borderColor ?? 'var(--border-default)'}` : undefined,
+                borderRadius: b.style?.borderRadius,
+                boxShadow: b.style?.shadow ? 'var(--shadow-lg)' : undefined,
+              }}
+            >
+              <Reveal animation={b.animation}>
+                {b.block.type === 'workgrid' ? (
+                  <WorkGrid tiles={tiles} />
+                ) : (
+                  <BlockContent block={b.block} editable={false} onUpdate={noop} pages={pages} widgets={widgets} />
+                )}
+              </Reveal>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

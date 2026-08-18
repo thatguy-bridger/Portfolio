@@ -231,8 +231,11 @@ export interface CustomPage {
 /** Routes a custom page's path can never occupy — they're the app's own static routes. */
 export const RESERVED_PATHS = new Set(['login', 'edit', 'edit/widgets', 'edit/messages', 'edit/homepage']);
 
-/** The freeform homepage canvas is authored at this fixed design width (px); it's centered and capped at this width on wider screens. Mobile gets its own layout in a later phase — for now it falls back to a simple stacked column. */
+/** The freeform homepage canvas is authored at this fixed design width (px); it's centered and capped at this width on wider screens. */
 export const GROUP_CANVAS_WIDTH = 1200;
+
+/** A separate, narrower design width a group's blocks can optionally be re-arranged at for mobile — see GroupBlock.mobilePosition. Below MOBILE_BREAKPOINT (GroupRenderer), a group with no customized mobile layout still falls back to a simple stacked column. */
+export const MOBILE_CANVAS_WIDTH = 390;
 
 export type EntranceAnimation = 'none' | 'fade' | 'slide-up' | 'slide-left' | 'slide-right' | 'scale';
 
@@ -258,7 +261,6 @@ export interface GroupBlock {
   id: string;
   block: PageBlock;
   position: GroupBlockPosition;
-  /** simple stacked-fallback order is used on mobile today; a real per-breakpoint layout is a later phase */
   zIndex: number;
   locked?: boolean;
   /** blocks sharing the same groupMemberId move and resize together when dragged as a set */
@@ -266,6 +268,10 @@ export interface GroupBlock {
   hideOnMobile?: boolean;
   style?: GroupBlockStyle;
   animation?: EntranceAnimation;
+  /** an independent position/size for this block at MOBILE_CANVAS_WIDTH — unset means the group hasn't been customized for mobile yet, and falls back to a simple stacked column */
+  mobilePosition?: GroupBlockPosition;
+  /** true once this block's desktop position has changed since mobilePosition was last touched — surfaced as a "review mobile layout" flag in the editor */
+  mobileStale?: boolean;
 }
 
 /**

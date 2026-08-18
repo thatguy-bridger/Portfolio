@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { GroupCanvas } from '../components/GroupCanvas';
+import { GroupCanvas, type CanvasDevice } from '../components/GroupCanvas';
+import { GroupRenderer } from '../components/GroupRenderer';
 import { ImageInput } from '../components/ImageInput';
 import { ColorPicker } from '../components/ColorPicker';
 import { Button } from '../components/ui/Button';
@@ -15,6 +17,7 @@ export function HomepageStudio() {
   const { signOut } = useAuth();
   const { data, setData, status, publishing, hasUnpublished, handlePublish } = useSiteDraft();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [previewingMobile, setPreviewingMobile] = useState(false);
 
   if (!data) {
     return (
@@ -61,7 +64,23 @@ export function HomepageStudio() {
 
   return (
     <>
-      <Topbar status={status} publishing={publishing} hasUnpublished={hasUnpublished} onPublish={handlePublish} onSignOut={signOut} />
+      <Topbar
+        status={status}
+        publishing={publishing}
+        hasUnpublished={hasUnpublished}
+        onPublish={handlePublish}
+        onSignOut={signOut}
+        onPreviewMobile={() => setPreviewingMobile(true)}
+      />
+      {previewingMobile && (
+        <MobilePreviewModal
+          groups={data.homepageGroups}
+          widgets={data.widgets}
+          pages={data.pages}
+          tiles={data.tiles}
+          onClose={() => setPreviewingMobile(false)}
+        />
+      )}
       <div style={{ paddingTop: TOPBAR_HEIGHT, maxWidth: 1260, margin: '0 auto', padding: `${TOPBAR_HEIGHT + 32}px 24px 80px` }}>
         {editing ? (
           <GroupEditor
@@ -95,12 +114,14 @@ function Topbar({
   hasUnpublished,
   onPublish,
   onSignOut,
+  onPreviewMobile,
 }: {
   status: SaveStatus;
   publishing: boolean;
   hasUnpublished: boolean;
   onPublish: () => void;
   onSignOut: () => void;
+  onPreviewMobile: () => void;
 }) {
   const label = { loading: 'Loading…', idle: 'Up to date', saving: 'Saving…', saved: 'Saved', error: 'Save failed' }[status];
   return (
@@ -134,6 +155,9 @@ function Topbar({
         {hasUnpublished && !publishing && <span style={{ color: 'var(--orange-500)', fontWeight: 600, whiteSpace: 'nowrap' }}>Unpublished changes</span>}
       </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+        <Button variant="ghost" size="sm" onClick={onPreviewMobile}>
+          📱 Preview mobile
+        </Button>
         <Button variant="primary" size="sm" onClick={onPublish} disabled={publishing || !hasUnpublished}>
           {publishing ? 'Publishing…' : 'Publish'}
         </Button>
@@ -142,6 +166,67 @@ function Topbar({
         </Button>
       </div>
     </div>
+  );
+}
+
+/** A phone-width frame showing the live public rendering of the whole homepage, so a mobile layout can be checked without leaving the editor or resizing the real browser window. */
+function MobilePreviewModal({
+  groups,
+  widgets,
+  pages,
+  tiles,
+  onClose,
+}: {
+  groups: HomepageGroup[];
+  widgets: Widget[];
+  pages: CustomPage[];
+  tiles: SiteTile[];
+  onClose: () => void;
+}) {
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 500,
+        background: 'rgba(0,0,0,0.55)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <span style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>Mobile preview</span>
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          Close
+        </Button>
+      </div>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 390,
+          maxWidth: '100%',
+          height: 'min(820px, 85vh)',
+          borderRadius: 28,
+          border: '8px solid #111',
+          background: 'var(--bg-app)',
+          overflow: 'hidden',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div style={{ width: '100%', height: '100%', overflowY: 'auto' }}>
+          {groups.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>No sections yet.</div>
+          ) : (
+            <GroupRenderer groups={groups} widgets={widgets} pages={pages} tiles={tiles} forceNarrow />
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -317,6 +402,9 @@ export function GroupEditor({
   onBack: () => void;
   onDelete: () => void;
 }) {
+  const [device, setDevice] = useState<CanvasDevice>('desktop');
+  const staleCount = group.blocks.filter((b) => b.mobileStale).length;
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -333,6 +421,64 @@ export function GroupEditor({
           Delete section
         </Button>
       </div>
+
+      <div style={{ display: 'inline-flex', background: 'var(--surface-panel)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-pill)', padding: 3, gap: 2, marginBottom: 12 }}>
+        {(['desktop', 'mobile'] as const).map((d) => (
+          <button
+            key={d}
+            onClick={() => setDevice(d)}
+            style={{
+              border: 'none',
+              borderRadius: 'var(--radius-pill)',
+              padding: '6px 16px',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: device === d ? 'var(--accent-primary)' : 'transparent',
+              color: device === d ? '#fff' : 'var(--text-body)',
+            }}
+          >
+            {d === 'desktop' ? '🖥️ Desktop' : '📱 Mobile'}
+          </button>
+        ))}
+      </div>
+
+      {staleCount > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(217,119,6,0.12)',
+            border: '1px solid rgba(217,119,6,0.4)',
+            fontSize: 12.5,
+            color: 'var(--text-heading)',
+            marginBottom: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <span>
+            ⚠ {staleCount} block{staleCount === 1 ? '' : 's'} moved on desktop since {staleCount === 1 ? 'its' : 'their'} mobile layout was last touched.
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {device !== 'mobile' && (
+              <Button variant="secondary" size="sm" onClick={() => setDevice('mobile')}>
+                Review on Mobile
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onChange({ blocks: group.blocks.map((b) => (b.mobileStale ? { ...b, mobileStale: false } : b)) })}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
         <input
@@ -392,6 +538,7 @@ export function GroupEditor({
         backgroundImage={group.backgroundImage}
         paddingY={group.paddingY ?? 0}
         minHeight={group.minHeight ?? 400}
+        device={device}
       />
     </div>
   );

@@ -9,14 +9,18 @@ import {
   newBlockId,
   newGroupBlockId,
   GROUP_CANVAS_WIDTH,
+  MOBILE_CANVAS_WIDTH,
   type CustomPage,
   type EntranceAnimation,
   type GroupBlock,
+  type GroupBlockPosition,
   type GroupBlockStyle,
   type PageBlockType,
   type SiteTile,
   type Widget,
 } from '../data/siteData';
+
+export type CanvasDevice = 'desktop' | 'mobile';
 
 const ANIMATION_OPTIONS: Array<{ key: EntranceAnimation; label: string }> = [
   { key: 'none', label: 'None' },
@@ -37,6 +41,31 @@ const WORKGRID_DEFAULT_H = 560;
 
 function snap(n: number) {
   return Math.round(n / FINE_PX) * FINE_PX;
+}
+
+/**
+ * Derives a starting mobile layout for whichever blocks don't have one yet:
+ * a simple full-width stacked column (same order the public site's
+ * un-customized mobile fallback already uses), so a group is never blank
+ * when its Mobile tab is first opened. Heights scale with the width change
+ * so a block that was short-and-wide on desktop doesn't become a tiny
+ * sliver. Pure — callers decide whether to persist the result.
+ */
+export function seedMobileLayout(blocks: GroupBlock[]): Record<string, GroupBlockPosition> {
+  const margin = 10;
+  const width = MOBILE_CANVAS_WIDTH - margin * 2;
+  const ordered = [...blocks]
+    .filter((b) => !b.hideOnMobile)
+    .sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
+  const out: Record<string, GroupBlockPosition> = {};
+  let cursor = margin;
+  const gap = 16;
+  for (const b of ordered) {
+    const h = Math.max(MIN_SIZE, Math.round(b.position.h * (width / b.position.w)));
+    out[b.id] = { x: margin, y: cursor, w: width, h };
+    cursor += h + gap;
+  }
+  return out;
 }
 
 interface DragState {
@@ -76,9 +105,14 @@ export function useElementWidth(): [React.RefObject<HTMLDivElement>, number] {
  * resized anywhere (in real canvas pixels, snapped to an 8px grid), can
  * overlap with explicit front/back ordering, can be grouped so several
  * move together, and can be locked in place. Authored at a fixed design
- * width (GROUP_CANVAS_WIDTH) and scaled down to fit narrower editor panes —
- * a real per-breakpoint mobile layout is a later phase; for now the public
- * site falls back to a simple stacked column below the mobile breakpoint.
+ * width and scaled down to fit narrower editor panes.
+ *
+ * `device` switches which position field is being edited: 'desktop' (the
+ * default) reads/writes `position` at GROUP_CANVAS_WIDTH; 'mobile' reads/
+ * writes `mobilePosition` at the narrower MOBILE_CANVAS_WIDTH, seeding a
+ * stacked starting layout for any block that doesn't have one yet. Adding,
+ * deleting, and reordering blocks only happens in desktop mode — mobile
+ * mode is purely a repositioning pass over the same set of blocks.
  */
 export function GroupCanvas({
   blocks,
@@ -92,6 +126,7 @@ export function GroupCanvas({
   backgroundImage,
   paddingY = 0,
   minHeight,
+  device = 'desktop',
 }: {
   blocks: GroupBlock[];
   editable: boolean;
@@ -106,21 +141,45 @@ export function GroupCanvas({
   backgroundImage?: string;
   paddingY?: number;
   minHeight?: number;
+  device?: CanvasDevice;
 }) {
   const [containerRef, containerWidth] = useElementWidth();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [guides, setGuides] = useState<GuideLine[]>([]);
   const dragState = useRef<DragState | null>(null);
+  const mobile = device === 'mobile';
+  const canvasWidth = mobile ? MOBILE_CANVAS_WIDTH : GROUP_CANVAS_WIDTH;
 
-  const scale = containerWidth > 0 ? Math.min(1, containerWidth / GROUP_CANVAS_WIDTH) : 1;
-  const maxBottom = blocks.reduce((m, b) => Math.max(m, b.position.y + b.position.h), 0);
+  // Mobile editing only shows blocks that will actually render on mobile, and seeds a
+  // starting stacked layout the first time a block is arranged there.
+  const visibleBlocks = mobile ? blocks.filter((b) => !b.hideOnMobile) : blocks;
+  const missingSeed = mobile && visibleBlocks.some((b) => !b.mobilePosition);
+  useLayoutEffect(() => {
+    if (!missingSeed) return;
+    const seeded = seedMobileLayout(blocks);
+    onChange(blocks.map((b) => (b.mobilePosition || b.hideOnMobile ? b : { ...b, mobilePosition: seeded[b.id], mobileStale: false })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missingSeed]);
+
+  function getPos(b: GroupBlock): GroupBlockPosition {
+    return (mobile ? b.mobilePosition : b.position) ?? b.position;
+  }
+
+  const scale = containerWidth > 0 ? Math.min(1, containerWidth / canvasWidth) : 1;
+  const maxBottom = visibleBlocks.reduce((m, b) => Math.max(m, getPos(b).y + getPos(b).h), 0);
   const canvasHeight = Math.max(minHeight ?? 0, maxBottom + 40);
 
   function updateBlock(id: string, patch: Partial<GroupBlock>) {
     onChange(blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   }
-  function updatePosition(id: string, patch: Partial<GroupBlock['position']>) {
-    onChange(blocks.map((b) => (b.id === id ? { ...b, position: { ...b.position, ...patch } } : b)));
+  function updatePosition(id: string, patch: Partial<GroupBlockPosition>) {
+    onChange(
+      blocks.map((b) => {
+        if (b.id !== id) return b;
+        if (mobile) return { ...b, mobilePosition: { ...getPos(b), ...patch }, mobileStale: false };
+        return { ...b, position: { ...b.position, ...patch }, mobileStale: b.mobilePosition ? true : b.mobileStale };
+      }),
+    );
   }
 
   function idsToMove(id: string): string[] {
@@ -150,16 +209,16 @@ export function GroupCanvas({
     const starts: DragState['starts'] = {};
     for (const bid of ids) {
       const b = blocks.find((x) => x.id === bid);
-      if (b) starts[bid] = { ...b.position };
+      if (b) starts[bid] = { ...getPos(b) };
     }
     dragState.current = { mode, ids, startX: e.clientX, startY: e.clientY, starts };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }
 
   function computeGuides(movingId: string, x: number, y: number, w: number, h: number): { x: number; y: number; guides: GuideLine[] } {
-    const others = blocks.filter((b) => b.id !== movingId && !dragState.current!.ids.includes(b.id));
-    const targetsX = [0, GROUP_CANVAS_WIDTH / 2, GROUP_CANVAS_WIDTH, ...others.flatMap((o) => [o.position.x, o.position.x + o.position.w / 2, o.position.x + o.position.w])];
-    const targetsY = [0, canvasHeight / 2, canvasHeight, ...others.flatMap((o) => [o.position.y, o.position.y + o.position.h / 2, o.position.y + o.position.h])];
+    const others = visibleBlocks.filter((b) => b.id !== movingId && !dragState.current!.ids.includes(b.id));
+    const targetsX = [0, canvasWidth / 2, canvasWidth, ...others.flatMap((o) => [getPos(o).x, getPos(o).x + getPos(o).w / 2, getPos(o).x + getPos(o).w])];
+    const targetsY = [0, canvasHeight / 2, canvasHeight, ...others.flatMap((o) => [getPos(o).y, getPos(o).y + getPos(o).h / 2, getPos(o).y + getPos(o).h])];
     const myX = [x, x + w / 2, x + w];
     const myY = [y, y + h / 2, y + h];
 
@@ -185,7 +244,7 @@ export function GroupCanvas({
         if (d < bestDy) {
           bestDy = d;
           snappedY = y + (ty - my);
-          guideY = { axis: 'y', pos: ty, from: 0, to: GROUP_CANVAS_WIDTH };
+          guideY = { axis: 'y', pos: ty, from: 0, to: canvasWidth };
         }
       }
     }
@@ -226,7 +285,9 @@ export function GroupCanvas({
       blocks.map((b) => {
         if (!d.ids.includes(b.id)) return b;
         const start = d.starts[b.id];
-        return { ...b, position: { ...b.position, x: Math.max(0, start.x + offsetX), y: Math.max(0, start.y + offsetY) } };
+        const next = { x: Math.max(0, start.x + offsetX), y: Math.max(0, start.y + offsetY) };
+        if (mobile) return { ...b, mobilePosition: { ...getPos(b), ...next }, mobileStale: false };
+        return { ...b, position: { ...b.position, ...next }, mobileStale: b.mobilePosition ? true : b.mobileStale };
       }),
     );
     setGuides(g);
@@ -278,6 +339,12 @@ export function GroupCanvas({
     const anyUnlocked = selectedIds.some((id) => !blocks.find((b) => b.id === id)?.locked);
     onChange(blocks.map((b) => (selectedIds.includes(b.id) ? { ...b, locked: anyUnlocked } : b)));
   }
+  function toggleHideOnMobile() {
+    const anyShown = selectedIds.some((id) => !blocks.find((b) => b.id === id)?.hideOnMobile);
+    onChange(blocks.map((b) => (selectedIds.includes(b.id) ? { ...b, hideOnMobile: anyShown } : b)));
+    // Hiding a block while arranging mobile removes it from this canvas — drop the now-stale selection.
+    if (mobile && anyShown) setSelectedIds([]);
+  }
   function groupSelected() {
     const groupMemberId = newGroupBlockId();
     onChange(blocks.map((b) => (selectedIds.includes(b.id) ? { ...b, groupMemberId } : b)));
@@ -306,6 +373,7 @@ export function GroupCanvas({
           <ToolbarButton onClick={bringToFront}>Bring to front</ToolbarButton>
           <ToolbarButton onClick={sendToBack}>Send to back</ToolbarButton>
           <ToolbarButton onClick={toggleLock}>{selectedBlocks.some((b) => b.locked) ? 'Unlock' : 'Lock'}</ToolbarButton>
+          <ToolbarButton onClick={toggleHideOnMobile}>{selectedBlocks.some((b) => b.hideOnMobile) ? 'Show on mobile' : 'Hide on mobile'}</ToolbarButton>
           {selectedBlocks.length > 1 && <ToolbarButton onClick={groupSelected}>Group</ToolbarButton>}
           {selectedBlocks.some((b) => b.groupMemberId) && <ToolbarButton onClick={ungroupSelected}>Ungroup</ToolbarButton>}
 
@@ -415,27 +483,27 @@ export function GroupCanvas({
             position: 'absolute',
             top: paddingY,
             left: 0,
-            width: GROUP_CANVAS_WIDTH,
+            width: canvasWidth,
             height: canvasHeight,
             transform: `scale(${scale})`,
             transformOrigin: 'top left',
           }}
         >
-          {blocks.length === 0 && editable && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 14, pointerEvents: 'none' }}>
-              Add a block to start building this section
+          {visibleBlocks.length === 0 && editable && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 14, pointerEvents: 'none', textAlign: 'center', padding: 16 }}>
+              {mobile ? 'Every block in this section is hidden on mobile.' : 'Add a block to start building this section'}
             </div>
           )}
-          {blocks.map((b) => (
+          {visibleBlocks.map((b) => (
             <div
               key={b.id}
               onPointerDown={(e) => editable && select(b.id, e.shiftKey)}
               style={{
                 position: 'absolute',
-                left: b.position.x,
-                top: b.position.y,
-                width: b.position.w,
-                height: b.position.h,
+                left: getPos(b).x,
+                top: getPos(b).y,
+                width: getPos(b).w,
+                height: getPos(b).h,
                 zIndex: b.zIndex,
                 outline: selectedIds.includes(b.id) ? '2px solid var(--accent-primary)' : editable ? '1px dashed var(--border-strong)' : 'none',
                 outlineOffset: -1,
@@ -512,6 +580,11 @@ export function GroupCanvas({
                   🔒
                 </div>
               )}
+              {editable && mobile && b.mobileStale && (
+                <div title="Desktop position changed since this block's mobile layout was last touched" style={{ position: 'absolute', top: -10, left: -10, fontSize: 12, background: '#d97706', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-strong)' }}>
+                  ⚠
+                </div>
+              )}
             </div>
           ))}
 
@@ -525,11 +598,16 @@ export function GroupCanvas({
         </div>
       </div>
 
-      {editable && (
+      {editable && !mobile && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <AddBlockMenu onAdd={addBlockOfType} />
           {tiles && <Button variant="ghost" size="sm" onClick={addWorkGrid}>+ Work Grid</Button>}
         </div>
+      )}
+      {editable && mobile && (
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+          Arranging for mobile. Switch to Desktop to add, remove, or restyle blocks.
+        </p>
       )}
     </div>
   );
