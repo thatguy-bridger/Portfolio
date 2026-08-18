@@ -41,7 +41,7 @@ export function PublicSite() {
       <ScrollProgress sections={data.useFreeformHomepage ? freeformSections : classicSections} />
       <main>
         {data.useFreeformHomepage ? (
-          <GroupRenderer groups={data.homepageGroups} widgets={data.widgets} pages={data.pages} />
+          <GroupRenderer groups={data.homepageGroups} widgets={data.widgets} pages={data.pages} tiles={data.tiles} />
         ) : (
           <>
             <Hero hero={data.hero} />

@@ -54,7 +54,7 @@ export interface SiteSkill {
   color: BadgeColor;
 }
 
-export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget' | 'video' | 'gallery' | 'embed' | 'code' | 'repeater';
+export type PageBlockType = 'heading' | 'text' | 'image' | 'button' | 'divider' | 'model3d' | 'widget' | 'video' | 'gallery' | 'embed' | 'code' | 'repeater' | 'workgrid';
 
 /** One manually-entered repetition of a repeater block's widget, keyed by the widget's instance-variable ids — same shape as a single widget block's widgetValues. */
 export interface RepeaterItem {

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GroupCanvas } from '../components/GroupCanvas';
+import { ImageInput } from '../components/ImageInput';
 import { Button } from '../components/ui/Button';
 import { GROUP_TEMPLATES } from '../data/groupTemplates';
-import { newGroupId, type CustomPage, type HomepageGroup, type Widget } from '../data/siteData';
+import { newGroupId, type CustomPage, type HomepageGroup, type SiteTile, type Widget } from '../data/siteData';
 import { useSiteDraft, type SaveStatus } from '../design-system/useSiteDraft';
 import { useAuth } from '../auth/AuthProvider';
 
@@ -66,6 +67,8 @@ export function HomepageStudio() {
             group={editing}
             widgets={data.widgets}
             pages={data.pages}
+            tiles={data.tiles}
+            onTilesChange={(tiles) => setData({ ...data, tiles })}
             onChange={(patch) => updateGroup(editing.id, patch)}
             onBack={() => setEditingId(null)}
             onDelete={() => deleteGroup(editing.id)}
@@ -298,6 +301,8 @@ export function GroupEditor({
   group,
   widgets,
   pages,
+  tiles,
+  onTilesChange,
   onChange,
   onBack,
   onDelete,
@@ -305,6 +310,8 @@ export function GroupEditor({
   group: HomepageGroup;
   widgets: Widget[];
   pages: CustomPage[];
+  tiles: SiteTile[];
+  onTilesChange: (tiles: SiteTile[]) => void;
   onChange: (patch: Partial<HomepageGroup>) => void;
   onBack: () => void;
   onDelete: () => void;
@@ -336,6 +343,18 @@ export function GroupEditor({
           Background
           <input type="color" value={group.background ?? '#ffffff'} onChange={(e) => onChange({ background: e.target.value })} style={{ width: 30, height: 26, padding: 0, border: 'none', borderRadius: 4, cursor: 'pointer' }} />
         </label>
+        <ImageInput
+          label={group.backgroundImage ? 'Replace background image' : '+ Background image'}
+          onSelect={(backgroundImage) => onChange({ backgroundImage })}
+        />
+        {group.backgroundImage && (
+          <button
+            onClick={() => onChange({ backgroundImage: undefined })}
+            style={{ border: 'none', background: 'none', color: 'var(--red-500)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+          >
+            Remove image
+          </button>
+        )}
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
           Min height
           <input
@@ -347,9 +366,32 @@ export function GroupEditor({
             style={{ width: 70, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-heading)', fontSize: 13 }}
           />
         </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+          Padding
+          <input
+            type="number"
+            min={0}
+            step={10}
+            value={group.paddingY ?? 0}
+            onChange={(e) => onChange({ paddingY: Math.max(0, Number(e.target.value) || 0) })}
+            style={{ width: 60, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-heading)', fontSize: 13 }}
+          />
+        </label>
       </div>
 
-      <GroupCanvas blocks={group.blocks} editable onChange={(blocks) => onChange({ blocks })} widgets={widgets} pages={pages} />
+      <GroupCanvas
+        blocks={group.blocks}
+        editable
+        onChange={(blocks) => onChange({ blocks })}
+        widgets={widgets}
+        pages={pages}
+        tiles={tiles}
+        onTilesChange={onTilesChange}
+        background={group.background}
+        backgroundImage={group.backgroundImage}
+        paddingY={group.paddingY ?? 0}
+        minHeight={group.minHeight ?? 400}
+      />
     </div>
   );
 }

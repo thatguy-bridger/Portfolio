@@ -1,12 +1,16 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { BlockContent, AddBlockMenu, newBlock } from './BlockContent';
-import { GROUP_CANVAS_WIDTH, newGroupBlockId, type CustomPage, type GroupBlock, type PageBlockType, type Widget } from '../data/siteData';
+import { WorkGrid } from '../sections/WorkGrid';
+import { Button } from './ui/Button';
+import { newBlockId, newGroupBlockId, GROUP_CANVAS_WIDTH, type CustomPage, type GroupBlock, type PageBlockType, type SiteTile, type Widget } from '../data/siteData';
 
 const FINE_PX = 8;
 const SNAP_PX = 6;
 const MIN_SIZE = 40;
 const DEFAULT_W = 320;
 const DEFAULT_H = 120;
+const WORKGRID_DEFAULT_W = 1140;
+const WORKGRID_DEFAULT_H = 560;
 
 function snap(n: number) {
   return Math.round(n / FINE_PX) * FINE_PX;
@@ -59,12 +63,26 @@ export function GroupCanvas({
   onChange,
   pages,
   widgets,
+  tiles,
+  onTilesChange,
+  background,
+  backgroundImage,
+  paddingY = 0,
+  minHeight,
 }: {
   blocks: GroupBlock[];
   editable: boolean;
   onChange: (blocks: GroupBlock[]) => void;
   pages?: CustomPage[];
   widgets?: Widget[];
+  /** the site's portfolio tiles — only needed if this group has a Work Grid block */
+  tiles?: SiteTile[];
+  onTilesChange?: (tiles: SiteTile[]) => void;
+  /** the enclosing group's own background/height, previewed here so editing matches what ships */
+  background?: string;
+  backgroundImage?: string;
+  paddingY?: number;
+  minHeight?: number;
 }) {
   const [containerRef, containerWidth] = useElementWidth();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -73,7 +91,7 @@ export function GroupCanvas({
 
   const scale = containerWidth > 0 ? Math.min(1, containerWidth / GROUP_CANVAS_WIDTH) : 1;
   const maxBottom = blocks.reduce((m, b) => Math.max(m, b.position.y + b.position.h), 0);
-  const canvasHeight = Math.max(200, maxBottom + 40);
+  const canvasHeight = Math.max(minHeight ?? 0, maxBottom + 40);
 
   function updateBlock(id: string, patch: Partial<GroupBlock>) {
     onChange(blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
@@ -197,6 +215,17 @@ export function GroupCanvas({
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   }
 
+  function addWorkGrid() {
+    const gb: GroupBlock = {
+      id: newGroupBlockId(),
+      block: { id: newBlockId(), type: 'workgrid' },
+      position: { x: 30, y: blocks.length === 0 ? 20 : 20 + blocks.length * 24, w: WORKGRID_DEFAULT_W, h: WORKGRID_DEFAULT_H },
+      zIndex: blocks.length + 1,
+    };
+    onChange([...blocks, gb]);
+    setSelectedIds([gb.id]);
+  }
+
   function addBlockOfType(type: PageBlockType) {
     const step = (blocks.length % 6) * 24;
     const gb: GroupBlock = {
@@ -259,10 +288,13 @@ export function GroupCanvas({
         style={{
           position: 'relative',
           width: '100%',
-          height: canvasHeight * scale,
+          height: (canvasHeight + paddingY * 2) * scale,
           borderRadius: 'var(--radius-md)',
           border: '1px solid var(--border-default)',
-          background: 'var(--surface-card)',
+          background: background || 'var(--surface-card)',
+          backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           overflow: 'hidden',
           touchAction: 'none',
         }}
@@ -277,7 +309,7 @@ export function GroupCanvas({
           }}
           style={{
             position: 'absolute',
-            top: 0,
+            top: paddingY,
             left: 0,
             width: GROUP_CANVAS_WIDTH,
             height: canvasHeight,
@@ -313,8 +345,12 @@ export function GroupCanvas({
                 opacity: b.locked && editable ? 0.85 : 1,
               }}
             >
-              <div style={{ width: '100%', height: '100%', overflow: 'auto', padding: 4 }}>
-                <BlockContent block={b.block} editable={editable} onUpdate={(patch) => updateBlock(b.id, { block: { ...b.block, ...patch } })} pages={pages} widgets={widgets} />
+              <div style={{ width: '100%', height: '100%', overflow: b.block.type === 'workgrid' ? 'visible' : 'auto', padding: b.block.type === 'workgrid' ? 0 : 4 }}>
+                {b.block.type === 'workgrid' ? (
+                  <WorkGrid tiles={tiles ?? []} pages={pages} editable={editable} onChange={onTilesChange} />
+                ) : (
+                  <BlockContent block={b.block} editable={editable} onUpdate={(patch) => updateBlock(b.id, { block: { ...b.block, ...patch } })} pages={pages} widgets={widgets} />
+                )}
               </div>
 
               {editable && selectedIds.includes(b.id) && !b.locked && (
@@ -385,7 +421,12 @@ export function GroupCanvas({
         </div>
       </div>
 
-      {editable && <AddBlockMenu onAdd={addBlockOfType} />}
+      {editable && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <AddBlockMenu onAdd={addBlockOfType} />
+          {tiles && <Button variant="ghost" size="sm" onClick={addWorkGrid}>+ Work Grid</Button>}
+        </div>
+      )}
     </div>
   );
 }

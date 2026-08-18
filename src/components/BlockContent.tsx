@@ -18,7 +18,10 @@ import { parseEmbedUrl, EMBED_ASPECT } from '../design-system/embeds';
 import { useClickAway } from '../design-system/useClickAway';
 import { newBlockId, type CustomPage, type PageBlock, type PageBlockType, type Widget } from '../data/siteData';
 
-export const BLOCK_LABEL: Record<PageBlockType, string> = {
+// 'workgrid' is deliberately excluded — it's a homepage-only block, inserted
+// via its own dedicated button in GroupCanvas, not the generic add-block menu
+// used everywhere else (custom pages, repeaters, etc).
+export const BLOCK_LABEL: Record<Exclude<PageBlockType, 'workgrid'>, string> = {
   heading: 'Heading',
   text: 'Text',
   image: 'Photo',
@@ -60,6 +63,8 @@ export function newBlock(type: PageBlockType): PageBlock {
       return { ...base, codeHtml: '' };
     case 'repeater':
       return { ...base, repeaterMode: 'manual', repeaterItems: [], repeaterColumns: 3 };
+    case 'workgrid':
+      return base;
   }
 }
 
@@ -137,7 +142,7 @@ export function AddBlockMenu({ onAdd }: { onAdd: (type: PageBlockType) => void }
               minWidth: 140,
             }}
           >
-            {(Object.keys(BLOCK_LABEL) as PageBlockType[]).map((type) => (
+            {(Object.keys(BLOCK_LABEL) as Exclude<PageBlockType, 'workgrid'>[]).map((type) => (
               <button
                 key={type}
                 onClick={() => {
@@ -584,5 +589,11 @@ export function BlockContent({
           ) : null}
         </div>
       );
+
+    // Rendered specially by GroupCanvas/GroupRenderer (it needs the site's
+    // tiles, not just this block) — this is only reached if a 'workgrid'
+    // block somehow ends up somewhere that doesn't intercept it.
+    case 'workgrid':
+      return null;
   }
 }
