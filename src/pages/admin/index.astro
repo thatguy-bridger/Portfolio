@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SignOutButton } from '../../components/admin/SignOutButton';
+import { getSupabase } from '../../lib/supabase-server';
+
+// Middleware already redirects signed-out visitors to /admin/login before
+// this ever renders — Astro.locals.admin is guaranteed non-null here.
+const admin = Astro.locals.admin!;
+
+// A first, minimal connectivity check — this becomes the real Diagnostics
+// screen in Phase 5. For now it just proves the Supabase env vars are wired
+// correctly, since that can't be verified by a build/typecheck alone.
+let supabaseStatus: { ok: boolean; detail: string };
+try {
+  const { error, count } = await getSupabase().from('pages').select('*', { count: 'exact', head: true });
+  supabaseStatus = error ? { ok: false, detail: error.message } : { ok: true, detail: `Connected — ${count ?? 0} page(s) in the database.` };
+} catch (err) {
+  supabaseStatus = { ok: false, detail: err instanceof Error ? err.message : 'Unknown error' };
+}
+---
+
+<BaseLayout title="Admin — Portfolio">
+  <main style="max-width: 640px; margin: 80px auto; padding: 0 20px;">
+    <h1>Admin</h1>
+    <p>Signed in as {admin.email ?? admin.uid}.</p>
+    <p>Supabase: {supabaseStatus.ok ? '✅' : '❌'} {supabaseStatus.detail}</p>
+    <SignOutButton client:load />
+  </main>
+</BaseLayout>

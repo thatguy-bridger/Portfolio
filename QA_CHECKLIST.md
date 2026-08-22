@@ -7,13 +7,13 @@ cutover (Phase 6). Check items off as they're verified in that final pass —
 not as each phase ships, since a later phase can regress an earlier one.
 
 ## Phase 0 — Architecture skeleton
-- [ ] New Astro project builds and deploys to Vercel
-- [ ] Supabase connection works (env vars, client initializes without error)
-- [ ] Firebase Auth admin gate: signed-out visitor is blocked from `/admin`
-- [ ] Firebase Auth admin gate: signed-in owner reaches `/admin`
-- [ ] Public site route renders (even if placeholder content)
-- [ ] Server endpoints reject writes without a valid Firebase session
-- [ ] `npm run build` + `astro check` both clean
+- [ ] New Astro project builds and deploys to Vercel — code done, deploy pending your Vercel/Supabase account setup (see SETUP.md)
+- [ ] Supabase connection works (env vars, client initializes without error) — code done, needs real Supabase project (SETUP.md)
+- [x] Firebase Auth admin gate: signed-out visitor is blocked from `/admin` — verified locally (302 to /admin/login)
+- [ ] Firebase Auth admin gate: signed-in owner reaches `/admin` — needs a real sign-in to verify (can't test with real credentials from here)
+- [x] Public site route renders (even if placeholder content) — verified locally
+- [x] Server endpoints reject writes without a valid Firebase session — verified locally (/api/session: 403 without Origin, 400 without idToken)
+- [x] `npm run build` + `astro check` both clean
 
 ## Phase 1 — Design system port
 - [ ] Light / dark / auto theme all render correctly, no flash-of-wrong-theme
