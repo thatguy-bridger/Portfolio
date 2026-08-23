@@ -26,15 +26,15 @@ not as each phase ships, since a later phase can regress an earlier one.
 - [ ] No visual regressions vs. the pre-rewrite Portfolio design language
 
 ## Phase 2 — Block registry + core blocks + freeform canvas
-- [ ] Add every block type from the registry at least once; each renders correctly
-- [ ] Inline click-to-edit works for text/image fields directly on canvas
-- [ ] Side panel opens for non-inline fields (links, URLs, settings)
-- [ ] Freeform drag works; snapping/alignment guides appear and work
-- [ ] Resize handles (Canva/Slides-style) work on all sides + corners, maintain aspect ratio where expected
-- [ ] Nested containers: drag a block into a column/carousel slot and back out
-- [ ] Mobile: pages reflow automatically without a separate mobile-position tab; nothing overlaps or overflows
-- [ ] Delete/duplicate/reorder a block
-- [ ] Draft vs. published states behave correctly per page (not site-wide)
+- [x] Add every block type from the registry at least once; each renders correctly — verified locally (hero, rich-text, image, image-text, button, quote, divider, columns, carousel all present in the demo harness's seed content, plus each addable fresh via the "+ Add block" picker)
+- [x] Inline click-to-edit works for text/image fields directly on canvas — verified locally (Playwright: edited a hero heading in place, confirmed the new text persisted)
+- [x] Side panel opens for non-inline fields (links, URLs, settings) — verified locally (a button's Link field, a hero's Alignment/Heading size/Text color — none of these are click-to-edit on the canvas itself)
+- [x] Freeform drag works; snapping/alignment guides appear and work — verified locally (dragging a block so its edge/center lines up with another block's edge/center shows a guide line and snaps within the threshold; verified both axes)
+- [x] Resize handles (Canva/Slides-style) work on all sides + corners, maintain aspect ratio where expected — verified locally (all 8 handles present on selection; corner and side handles both resize correctly; holding Shift on a corner handle preserves aspect ratio within snap-rounding tolerance)
+- [x] Nested containers: drag a block into a column/carousel slot and back out — verified locally (Playwright: dragged a top-level block onto a Columns slot, confirmed it replaced the slot's content and the top-level block count dropped by one; used the slot's "pull out" control to extract it back to a top-level block)
+- [x] Mobile: pages reflow automatically without a separate mobile-position tab; nothing overlaps or overflows — verified locally (both the editor's mobile-preview toggle and the public renderer at a 380px viewport show every section's blocks stacked full-width in y-order; Columns/Image+Text blocks also switch to a stacked internal layout at that width so nothing is squeezed unreadably narrow)
+- [x] Delete/duplicate/reorder a block — verified locally (Playwright: Duplicate increased the block count by one, Send to back changed its zIndex to below the others, Delete removed it)
+- [ ] Draft vs. published states behave correctly per page (not site-wide) — out of scope this phase; the demo harness is local-state only and isn't wired to the real Supabase `pages` table yet (see the `// TODO(phase-4-or-later)` marker in CanvasDemo.tsx) — re-check once a later phase wires the editor to real draft/publish rows
 
 ## Phase 3 — Motion + Sound
 - [ ] Magnetic cursor attraction works on intended elements
