@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { SignOutButton } from '../../components/admin/SignOutButton';
+import { ThemeToggle } from '../../components/ThemeToggle';
+import { ThemeSettingsPanel } from '../../components/ThemeSettingsPanel';
 import { getSupabase } from '../../lib/supabase-server';
 
 // Middleware already redirects signed-out visitors to /admin/login before
@@ -20,10 +22,43 @@ try {
 ---
 
 <BaseLayout title="Admin — Portfolio">
-  <main style="max-width: 640px; margin: 80px auto; padding: 0 20px;">
-    <h1>Admin</h1>
-    <p>Signed in as {admin.email ?? admin.uid}.</p>
-    <p>Supabase: {supabaseStatus.ok ? '✅' : '❌'} {supabaseStatus.detail}</p>
-    <SignOutButton client:load />
+  <main style="max-width: 720px; margin: 0 auto; padding: 48px 20px 96px; display: flex; flex-direction: column; gap: var(--space-6);">
+    <header style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;">
+      <div>
+        <h1 style="font-size: var(--text-3xl); color: var(--text-heading);">Admin</h1>
+        <p style="color: var(--text-muted); font-size: var(--text-sm);">Signed in as {admin.email ?? admin.uid}.</p>
+      </div>
+      <ThemeToggle client:load />
+    </header>
+
+    <section class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+      <p style="margin: 0; color: var(--text-body); font-size: var(--text-sm);">
+        Supabase: {supabaseStatus.ok ? '✅' : '❌'} {supabaseStatus.detail}
+      </p>
+      <SignOutButton client:load />
+    </section>
+
+    <section>
+      <h2 style="font-size: var(--text-xl); color: var(--text-heading); margin-bottom: var(--space-3);">Theme</h2>
+      <ThemeSettingsPanel client:load />
+    </section>
   </main>
 </BaseLayout>
+
+<style>
+  main :global(button:not(.btn)) {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-default);
+    background: var(--surface-panel);
+    color: var(--text-heading);
+    padding: 0.5em 1.2em;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-standard);
+  }
+  main :global(button:not(.btn):hover) {
+    border-color: var(--border-strong);
+  }
+</style>

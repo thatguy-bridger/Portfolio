@@ -16,14 +16,14 @@ not as each phase ships, since a later phase can regress an earlier one.
 - [x] `npm run build` + `astro check` both clean
 
 ## Phase 1 — Design system port
-- [ ] Light / dark / auto theme all render correctly, no flash-of-wrong-theme
-- [ ] Theme toggle persists across reload
-- [ ] Font library loads and applies (display + body fonts)
-- [ ] Accent color picker changes the live theme correctly
-- [ ] ColorPicker: pick a color, clear a color (None), save a color to defaults, remove a saved swatch
-- [ ] ColorPicker: setting RGBA to all zero does not break saving (regression check for the bug fixed pre-rewrite)
-- [ ] Alta-style card/shadow/radius scale applied consistently across components
-- [ ] No visual regressions vs. the pre-rewrite Portfolio design language
+- [x] Light / dark / auto theme all render correctly, no flash-of-wrong-theme — verified via Playwright screenshots across OS-light/OS-dark × auto/explicit-light/explicit-dark; `data-theme` is set synchronously pre-paint by an inline script in BaseLayout.astro's `<head>`, before any content renders
+- [x] Theme toggle persists across reload — verified (`localStorage['portfolio:theme']` survives reload; explicit dark chosen under an OS-light context still reads back `data-theme="dark"` after reload)
+- [ ] Font library loads and applies (display + body fonts) — selection mechanism verified (font list highlights the active pick, `--font-display`/`--font-body`/`--font-mono` update, `loadFont()` fires) but this sandbox's outbound network blocks fonts.googleapis.com, so the actual glyph swap wasn't visually observed here — needs a real-network re-check
+- [x] Accent color picker changes the live theme correctly — verified (presets + custom-via-ColorPicker both update `--accent-primary`/`--accent-primary-hover`/`--shadow-glow-accent` live, visible immediately on the primary button and swatch)
+- [x] ColorPicker: pick a color, clear a color (None), save a color to defaults, remove a saved swatch — all four verified via a dedicated demo (CardTintDemo on the homepage, since AccentPicker never passes `onClear`)
+- [x] ColorPicker: setting RGBA to all zero does not break saving (regression check for the bug fixed pre-rewrite) — verified: typed hex `000000` renders with no page errors; this phase has no save/serialize path yet (presentational only), so this only confirms the picker itself tolerates all-zero, not a Supabase write
+- [x] Alta-style card/shadow/radius scale applied consistently across components — verified: `--radius-sm`(4px)/`--radius-md`(8px)/`--radius-lg`(14px)/`--radius-pill` and the soft low-elevation shadow scale are live in `src/styles/theme.css` and visible on the demo cards/inputs/buttons
+- [x] No visual regressions vs. the pre-rewrite Portfolio design language — palette, fonts, glassmorphism, pill buttons, and accent system all ported byte-for-byte from `main`; only radius/shadow scale intentionally shrunk per the Alta ask (see Phase 1 commit for the reasoning)
 
 ## Phase 2 — Block registry + core blocks + freeform canvas
 - [ ] Add every block type from the registry at least once; each renders correctly

@@ -1,0 +1,363 @@
+/**
+ * Design tokens — ported from the pre-rewrite Portfolio app
+ * (thatguy-bridger/Portfolio, branch main, commit 9c4ee47:
+ * src/design-system/theme.css + tokens/*.css), with the radius and shadow
+ * scale replaced by the smaller, softer scale from thatguy-bridger/alta-seminary
+ * (src/design-system/tokens/effects.css) per the owner's explicit request.
+ *
+ * Theme is dark-first (bare :root = dark, matching the old app's near-black
+ * default look). Three states, chosen via `<html data-theme="dark"|"light">`:
+ *   - attribute absent  -> system/auto, tracked live by @media (prefers-color-scheme)
+ *   - data-theme="dark" -> explicit dark (already the :root default, no override needed)
+ *   - data-theme="light"-> explicit light, applied unconditionally regardless of OS
+ * See the inline pre-paint script in src/layouts/BaseLayout.astro's <head> that sets the attribute.
+ */
+
+:root {
+  /* ---- palette (hue scale) ---- */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --gray-950: #0a0a0a;
+
+  --indigo-300: #a5b4fc;
+  --indigo-400: #818cf8;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
+  --purple-300: #c084fc;
+  --purple-400: #a78bfa;
+  --purple-500: #9061e5;
+  --purple-600: #9333ea;
+  --orange-400: #fbbf24;
+  --orange-500: #f59e0b;
+  --orange-600: #ea580c;
+  --pink-300: #f9a8d4;
+  --pink-500: #ec4899;
+  --pink-900: #831843;
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --cyan-500: #06b6d4;
+  --cyan-900: #164e63;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+
+  /* ---- semantic (dark, default) ---- */
+  --bg: var(--gray-950);
+  --surface-1: var(--gray-900);
+  --surface-2: var(--gray-800);
+  --surface-3: var(--gray-700);
+  --border-1: var(--gray-700);
+  --border-2: var(--gray-600);
+  --text-1: var(--gray-50);
+  --text-2: var(--gray-300);
+  --text-3: var(--gray-400);
+
+  --accent-primary: var(--indigo-500);
+  --accent-primary-hover: var(--indigo-600);
+  --accent-secondary: var(--purple-400);
+  --accent-warm: var(--orange-400);
+  --accent-alert: var(--red-500);
+  --accent-success: var(--green-500);
+  --accent-info: var(--blue-400);
+
+  --bg-app: var(--bg);
+  --surface-card: var(--surface-2);
+  --surface-card-2: rgba(31, 41, 55, 0.5);
+  --surface-panel: var(--surface-1);
+  --surface-overlay: rgba(0, 0, 0, 0.7);
+  --surface-glass: rgba(17, 24, 39, 0.55);
+  --border-default: var(--border-1);
+  --border-strong: var(--border-2);
+  --text-heading: var(--text-1);
+  --text-body: var(--text-2);
+  --text-muted: var(--text-3);
+  --link: var(--indigo-400);
+  --link-hover: var(--indigo-300);
+
+  /* ---- shadows (dark) — Alta's soft, low-elevation shape (1/2, 4/12, 12/32px),
+     opacity raised vs. Alta's own light-only values so shadows still read
+     against a near-black surface; --shadow-xl extends the same progression
+     one step further for the handful of "floating/dragging" use cases
+     (modals, in-flight drag cards) the old app relied on --shadow-xl for. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.45);
+  --shadow-glow-accent: 0 8px 20px color-mix(in srgb, var(--accent-primary) 40%, transparent);
+
+  /* ---- radius (Alta's scale: 4 / 8 / 14 / pill) ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-pill: 9999px;
+
+  /* ---- spacing ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --container-max: 80rem;
+
+  /* ---- motion ---- */
+  --blur-glass: blur(20px);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 0.2s;
+  --duration-normal: 0.3s;
+  --duration-slow: 0.5s;
+
+  /* ---- typography ---- */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', var(--font-sans);
+  --font-body: 'Inter', var(--font-sans);
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+  --text-7xl: 4.5rem;
+
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.02em;
+}
+
+/* ---- light, system-resolved (OS prefers light, no explicit override) ---- */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg-app: var(--gray-100);
+    --surface-card: var(--gray-50);
+    --surface-card-2: #ffffff;
+    --surface-panel: #ffffff;
+    --surface-overlay: rgba(0, 0, 0, 0.7);
+    --surface-glass: rgba(255, 255, 255, 0.6);
+    --border-default: var(--gray-200);
+    --border-strong: var(--gray-300);
+    --text-heading: #1f2937;
+    --text-body: var(--gray-600);
+    --text-muted: var(--gray-500);
+    --accent-primary: var(--indigo-600);
+    --accent-primary-hover: var(--indigo-700);
+    --accent-secondary: var(--purple-600);
+    --accent-warm: var(--orange-600);
+    --link: var(--indigo-600);
+    --link-hover: var(--indigo-700);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.16);
+  }
+}
+
+/* ---- light, explicit (data-theme="light" wins regardless of OS) ---- */
+:root[data-theme='light'] {
+  --bg-app: var(--gray-100);
+  --surface-card: var(--gray-50);
+  --surface-card-2: #ffffff;
+  --surface-panel: #ffffff;
+  --surface-overlay: rgba(0, 0, 0, 0.7);
+  --surface-glass: rgba(255, 255, 255, 0.6);
+  --border-default: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --text-heading: #1f2937;
+  --text-body: var(--gray-600);
+  --text-muted: var(--gray-500);
+  --accent-primary: var(--indigo-600);
+  --accent-primary-hover: var(--indigo-700);
+  --accent-secondary: var(--purple-600);
+  --accent-warm: var(--orange-600);
+  --link: var(--indigo-600);
+  --link-hover: var(--indigo-700);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-body);
+  font-family: var(--font-body);
+  transition:
+    background-color var(--duration-slow) var(--ease-standard),
+    color var(--duration-slow) var(--ease-standard);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+::selection {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+/* Hides native spin buttons on the color picker's RGBA fields — at their compact width, the
+   browser's spinner arrows crowd out the digits of 3-digit values (e.g. "255"). */
+.cp-number-field {
+  -moz-appearance: textfield;
+}
+.cp-number-field::-webkit-outer-spin-button,
+.cp-number-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ---- small set of shared component classes (radius/shadow scale demo + plain-HTML use) ---- */
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-6);
+}
+
+.glass-card {
+  background: var(--surface-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
+  transition:
+    transform var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+}
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  padding: 0.6em 1.4em;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+.btn-primary {
+  background: var(--accent-primary);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--accent-primary-hover);
+  box-shadow: var(--shadow-glow-accent);
+}
+.btn-secondary {
+  background: var(--surface-card);
+  color: var(--text-heading);
+  border-color: var(--border-default);
+}
+.btn-secondary:hover {
+  border-color: var(--border-strong);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--text-muted);
+}
+
+.input {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  padding: 0.55em 0.75em;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-heading);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}

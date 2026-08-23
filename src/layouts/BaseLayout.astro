@@ -1,4 +1,6 @@
 ---
+import '../styles/theme.css';
+
 interface Props {
   title: string;
 }
@@ -11,6 +13,67 @@ const { title } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script is:inline>
+      /**
+       * Pre-paint theme resolver — runs synchronously, before anything below
+       * it renders, so there is never a flash of the wrong theme. `is:inline`
+       * keeps Astro from bundling/deferring this (see astro.build/config/scripts).
+       *
+       * Mechanism ported from thatguy-bridger/alta-seminary's theme-init.js
+       * (localStorage-persisted choice + a global setter the toggle/panel
+       * components call), with one deliberate change: "auto" leaves
+       * `data-theme` off entirely instead of JS-resolving it to light/dark
+       * and setting the attribute anyway. That lets src/styles/theme.css's
+       * own `@media (prefers-color-scheme)` block track the OS live with no
+       * JS needed on OS-theme change, and makes "attribute absent" mean
+       * exactly "system/auto" everywhere in the CSS.
+       */
+      (function () {
+        try {
+          var KEY = 'portfolio:theme';
+
+          function apply(mode) {
+            var root = document.documentElement;
+            if (mode === 'light' || mode === 'dark') root.setAttribute('data-theme', mode);
+            else root.removeAttribute('data-theme');
+          }
+
+          var stored = localStorage.getItem(KEY) || 'auto';
+          apply(stored);
+
+          window.PortfolioTheme = {
+            get: function () {
+              return localStorage.getItem(KEY) || 'auto';
+            },
+            set: function (mode) {
+              try {
+                localStorage.setItem(KEY, mode);
+              } catch (e) {
+                // localStorage unavailable (private mode, etc.) — theme still applies for this load, just won't persist.
+              }
+              apply(mode);
+              window.dispatchEvent(new CustomEvent('portfolio-theme-change', { detail: mode }));
+            },
+            cycle: function () {
+              var order = ['light', 'dark', 'auto'];
+              var next = order[(order.indexOf(window.PortfolioTheme.get()) + 1) % order.length];
+              window.PortfolioTheme.set(next);
+              return next;
+            },
+          };
+        } catch (e) {
+          // Storage/DOM access blocked entirely — page still renders with the default (dark) theme.
+        }
+      })();
+    </script>
   </head>
   <body>
     <slot />
