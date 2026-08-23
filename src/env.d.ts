@@ -16,3 +16,22 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Set by the pre-paint theme script inlined in BaseLayout.astro's <head>. */
+interface PortfolioThemeGlobal {
+  get(): 'light' | 'dark' | 'auto';
+  set(mode: 'light' | 'dark' | 'auto'): void;
+  cycle(): 'light' | 'dark' | 'auto';
+}
+
+// This file has no top-level import/export, which makes it an ambient script
+// (not a module) as far as TypeScript is concerned — so these augment the
+// global `Window`/`WindowEventMap` directly, same as ImportMeta above, rather
+// than through a `declare global {}` block (which requires a module scope).
+interface Window {
+  PortfolioTheme?: PortfolioThemeGlobal;
+}
+
+interface WindowEventMap {
+  'portfolio-theme-change': CustomEvent<'light' | 'dark' | 'auto'>;
+}
