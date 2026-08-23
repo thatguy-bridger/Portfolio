@@ -19,6 +19,7 @@ import {
 } from './simpleBlocks';
 import { ColumnsBlockView } from './ColumnsBlockView';
 import { CarouselBlockView } from './CarouselBlockView';
+import { ContactFormBlockView } from './ContactFormBlockView';
 import type { BlockComponentProps } from './types';
 
 export const BLOCK_COMPONENTS: Record<string, React.ComponentType<BlockComponentProps>> = {
@@ -31,6 +32,7 @@ export const BLOCK_COMPONENTS: Record<string, React.ComponentType<BlockComponent
   divider: DividerBlockView,
   columns: ColumnsBlockView,
   carousel: CarouselBlockView,
+  'contact-form': ContactFormBlockView,
 };
 
 export function BlockRenderer(props: BlockComponentProps & { type: string }) {

@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { MediaLibrary } from '../../admin/MediaLibrary';
 
 /**
  * Click-to-edit-directly-on-the-canvas image field. Clicking the image (or
- * its empty placeholder) opens a small inline popover to paste an image URL
- * or pick a local file — there's no real media library yet (that's Phase 4,
- * per QA_CHECKLIST.md), so a picked file is read to a data: URL client-side
- * rather than uploaded anywhere.
- * // TODO(phase-4-or-later): replace the data: URL file picker with a real
- * // upload to the Supabase `media_library` bucket once that phase wires it up.
+ * its empty placeholder) opens a small inline popover to paste an image URL,
+ * upload straight to the Supabase media library, or pick a previously
+ * uploaded image via "Choose from library" (Phase 4) — every path ends by
+ * calling `commit()` with a real URL, so this component itself doesn't care
+ * where the URL came from.
  */
 export function EditableImage({
   value,
@@ -24,7 +25,7 @@ export function EditableImage({
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   function openPopover() {
     // Deliberately no stopPropagation on the pointerdown that calls this —
@@ -38,14 +39,7 @@ export function EditableImage({
   function commit(url: string) {
     onChange(url);
     setOpen(false);
-  }
-
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => commit(String(reader.result));
-    reader.readAsDataURL(file);
+    setLibraryOpen(false);
   }
 
   return (
@@ -114,19 +108,56 @@ export function EditableImage({
           />
           <div style={{ display: 'flex', gap: 6 }}>
             <button type="button" onClick={() => commit(draft)} style={panelButtonStyle(true)}>Use URL</button>
-            <button type="button" onClick={() => fileRef.current?.click()} style={panelButtonStyle(false)}>Upload file…</button>
-            {value && (
-              <button type="button" onClick={() => commit('')} style={{ ...panelButtonStyle(false), color: '#ef4444' }}>
-                Remove
-              </button>
-            )}
+            <button type="button" onClick={() => setLibraryOpen(true)} style={panelButtonStyle(false)}>Choose from library…</button>
           </div>
-          <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
+          {value && (
+            <button type="button" onClick={() => commit('')} style={{ ...panelButtonStyle(false), color: '#ef4444' }}>
+              Remove image
+            </button>
+          )}
           <button type="button" onClick={() => setOpen(false)} style={{ alignSelf: 'flex-end', border: 'none', background: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}>
             Close
           </button>
         </div>
       )}
+
+      {libraryOpen &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 5000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,0.5)',
+              padding: 20,
+            }}
+            onClick={() => setLibraryOpen(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: 'min(560px, 100%)',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                padding: 16,
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--surface-panel)',
+                border: '1px solid var(--border-default)',
+                boxShadow: 'var(--shadow-lg)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 700, color: 'var(--text-heading)' }}>Media library</h3>
+              <MediaLibrary mode="picker" onSelect={commit} onClose={() => setLibraryOpen(false)} />
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

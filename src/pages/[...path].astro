@@ -1,0 +1,32 @@
+---
+// Public rendering for every real, non-root page (see src/pages/index.astro
+// for the root "/" — a static route always wins over this catch-all in
+// Astro's routing priority, so this file never sees an empty path in
+// practice). Reads `published_blocks` for whatever page matches the request
+// path and renders it through PublicPage.tsx — the same component the
+// admin's "Preview as visitor" mode uses on draft_blocks (see
+// PageEditor.tsx) — so a published page and its own preview can never
+// visually diverge. 404s (rather than falling through to a blank page) when
+// no published page matches, per this phase's spec.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { PublicPage } from '../components/render/PublicPage';
+import { fetchPublishedPage } from '../lib/publicPage';
+
+const requestPath = `/${Astro.params.path ?? ''}`;
+const page = await fetchPublishedPage(requestPath);
+
+if (!page) Astro.response.status = 404;
+---
+
+{page ? (
+  <BaseLayout title={`${page.title} — Portfolio`}>
+    <PublicPage sections={page.blocks} client:load />
+  </BaseLayout>
+) : (
+  <BaseLayout title="Not found — Portfolio">
+    <main style="max-width: 480px; margin: 96px auto; padding: 0 20px; text-align: center;">
+      <h1 style="font-size: var(--text-3xl); color: var(--text-heading);">Page not found</h1>
+      <p style="color: var(--text-muted);">There's nothing published at this address.</p>
+    </main>
+  </BaseLayout>
+)}

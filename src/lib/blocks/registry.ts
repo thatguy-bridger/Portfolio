@@ -140,6 +140,18 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       { key: 'align', kind: 'select', label: 'Alignment', options: [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }] },
     ],
   },
+  'contact-form': {
+    label: 'Contact Form',
+    category: 'Interactive',
+    icon: '@',
+    description: 'A name/email/message form that submits to your inbox.',
+    defaultProps: { heading: 'Get in touch', subheading: '', submitLabel: 'Send message' },
+    fields: [
+      { key: 'heading', kind: 'text', label: 'Heading' },
+      { key: 'subheading', kind: 'text', label: 'Subheading' },
+      { key: 'submitLabel', kind: 'text', label: 'Submit button label', inline: false },
+    ],
+  },
   divider: {
     label: 'Divider',
     category: 'Layout',

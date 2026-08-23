@@ -4,10 +4,11 @@
 // talks to Supabase or Firebase. NOT linked from the real public site or
 // /admin. See src/pages/dev/canvas-demo.astro for the route this mounts on.
 //
-// TODO(phase-4-or-later): wire a version of this editing surface to the
-// real Supabase `pages` table (draft_blocks/published_blocks) once the
-// admin app + save/publish flow exist — this file itself stays a
-// standalone demo, that's a separate integration.
+// Phase 4 wired this same editing surface (CanvasEditor + PublicPage) to the
+// real Supabase `pages` table — see src/components/admin/PageEditor.tsx and
+// /admin/pages/[id]. This file intentionally stays a standalone,
+// backend-free demo rather than being replaced by that; it's still useful
+// as a no-auth-required harness for exercising the canvas/registry alone.
 import { useEffect, useState } from 'react';
 import { createSection } from '../../lib/blocks/registry';
 import { createDemoSections } from '../../lib/blocks/demoData';

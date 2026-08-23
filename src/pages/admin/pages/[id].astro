@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { PageEditor, type AdminPageRow } from '../../../components/admin/PageEditor';
+import { getSupabase } from '../../../lib/supabase-server';
+
+// Middleware already guarantees Astro.locals.admin here (see middleware.ts).
+const { id } = Astro.params;
+
+let page: AdminPageRow | null = null;
+let loadError: string | null = null;
+try {
+  const { data, error } = await getSupabase().from('pages').select('*').eq('id', id).maybeSingle();
+  if (error) loadError = error.message;
+  else page = data as AdminPageRow | null;
+} catch (err) {
+  loadError = err instanceof Error ? err.message : 'Could not reach Supabase.';
+}
+
+if (!page && !loadError) return new Response(null, { status: 404 });
+---
+
+<BaseLayout title={page ? `Editing ${page.title} — Admin — Portfolio` : 'Admin — Portfolio'}>
+  <main style="max-width: 1280px; margin: 0 auto; padding: 24px 20px 96px;">
+    {loadError ? (
+      <p style="color: #ef4444;">Could not load this page: {loadError}</p>
+    ) : page ? (
+      <PageEditor page={page} client:only="react" />
+    ) : null}
+  </main>
+</BaseLayout>

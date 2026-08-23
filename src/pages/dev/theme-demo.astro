@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ThemeToggle } from '../../components/ThemeToggle';
+import { ThemeSettingsPanel } from '../../components/ThemeSettingsPanel';
+import { CardTintDemo } from '../../components/CardTintDemo';
+---
+
+<!--
+  The Phase 1 design-system preview — this used to live at "/" before Phase 4
+  wired the homepage to a real Supabase-backed page (see src/pages/index.astro),
+  at which point "/" needed to become real CMS content instead of a permanent
+  placeholder. Moved here verbatim rather than deleted: it's still the
+  dedicated ColorPicker QA harness QA_CHECKLIST.md's Phase 1 section points
+  at (CardTintDemo, since AccentPicker never passes `onClear`). Not linked
+  from any real page.
+-->
+
+<BaseLayout title="Design system preview (dev) — Portfolio">
+  <main style="max-width: 880px; margin: 0 auto; padding: 48px 20px 96px; display: flex; flex-direction: column; gap: var(--space-8);">
+    <header style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;">
+      <div>
+        <h1 style="font-size: var(--text-4xl); color: var(--text-heading); letter-spacing: var(--tracking-tight);">Design system preview.</h1>
+        <p style="color: var(--text-muted); font-size: var(--text-base); max-width: 46ch;">
+          Dev-only harness for the tokens/components the rewrite is built on — not the real site (see src/pages/index.astro for that).
+        </p>
+      </div>
+      <ThemeToggle client:load />
+    </header>
+
+    <section class="card">
+      <h2 style="font-size: var(--text-xl); color: var(--text-heading); margin-bottom: var(--space-2);">Buttons &amp; badges</h2>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3);">
+        <button class="btn btn-primary">Primary action</button>
+        <button class="btn btn-secondary">Secondary</button>
+        <span class="badge">New</span>
+        <input class="input" placeholder="radius-sm input" style="max-width: 200px;" />
+      </div>
+    </section>
+
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-5);">
+      <div class="card">
+        <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Card</h3>
+        <p style="color: var(--text-muted); font-size: var(--text-sm);">radius-lg (14px), shadow-sm — the flat/compact surface.</p>
+      </div>
+      <div class="glass-card">
+        <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Glass card</h3>
+        <p style="color: var(--text-muted); font-size: var(--text-sm);">radius-lg, glassmorphism + hover-lift, shadow-md → shadow-lg.</p>
+      </div>
+    </section>
+
+    <CardTintDemo client:load />
+
+    <section>
+      <h2 style="font-size: var(--text-xl); color: var(--text-heading); margin-bottom: var(--space-3);">Theme</h2>
+      <ThemeSettingsPanel client:load />
+    </section>
+  </main>
+</BaseLayout>

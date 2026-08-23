@@ -11,7 +11,10 @@ Two things happen once you're set up:
   draft. Hit **Publish** to make them go live.
 - **`/`** — the public site. Always shows the last **published** version.
   Nobody can edit it without signing in. Because Astro renders per-request,
-  a publish is live immediately — no rebuild wait.
+  a publish is live immediately — no rebuild wait. On a brand-new database
+  there's no homepage yet: sign in, create a page at path `/` in
+  **Admin → Pages**, add some content, and hit **Publish** — until then `/`
+  (and every other unpublished path) shows a 404, by design.
 
 ## 1. Firebase (Auth only)
 
@@ -52,8 +55,14 @@ old setup are unused and safe to ignore or delete.
    the **`service_role` secret** key (not the `anon` key — the app only ever
    talks to Supabase from the server, using the service-role key, so the
    browser never gets any Supabase credentials at all).
-4. A Storage bucket for uploaded images gets created in the Phase 4 update
-   (media library) — nothing to do here yet.
+4. Left sidebar → **SQL Editor** → **New query** → paste the contents of
+   [`supabase/migrations/0002_media_storage.sql`](./supabase/migrations/0002_media_storage.sql)
+   → **Run**. This creates the `media` Storage bucket the media library
+   uploads into (public read, so uploaded images render on the live site;
+   writes only ever happen server-side via `/api/admin/media`, using the
+   same service-role key as everything else — nothing here needs a separate
+   credential). No env var to add: the bucket name (`media`) is a plain
+   constant in `src/lib/media.ts`, not configuration.
 
 ## 3. Configure the app locally
 

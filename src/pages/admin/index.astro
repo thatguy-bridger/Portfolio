@@ -38,6 +38,21 @@ try {
       <SignOutButton client:load />
     </section>
 
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-3);">
+      <a class="card" href="/admin/pages" style="text-decoration: none; color: inherit;">
+        <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Pages</h3>
+        <p style="color: var(--text-muted); font-size: var(--text-sm); margin: 0;">Edit content, draft &amp; publish.</p>
+      </a>
+      <a class="card" href="/admin/inbox" style="text-decoration: none; color: inherit;">
+        <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Inbox</h3>
+        <p style="color: var(--text-muted); font-size: var(--text-sm); margin: 0;">Contact-form submissions.</p>
+      </a>
+      <a class="card" href="/admin/media" style="text-decoration: none; color: inherit;">
+        <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Media library</h3>
+        <p style="color: var(--text-muted); font-size: var(--text-sm); margin: 0;">Uploaded images.</p>
+      </a>
+    </section>
+
     <section>
       <h2 style="font-size: var(--text-xl); color: var(--text-heading); margin-bottom: var(--space-3);">Theme</h2>
       <ThemeSettingsPanel client:load />

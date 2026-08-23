@@ -38,6 +38,7 @@ const DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
   button: { w: 200, h: 60 },
   quote: { w: 480, h: 180 },
   divider: { w: 600, h: 40 },
+  'contact-form': { w: 460, h: 420 },
   columns: { w: 900, h: 260 },
   carousel: { w: 640, h: 380 },
 };
