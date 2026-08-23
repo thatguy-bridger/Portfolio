@@ -140,9 +140,15 @@ export function CanvasDemo() {
       )}
 
       {mode === 'preview' && (
-        <div style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} data-testid="public-preview">
-          <PublicPage sections={sections} />
-        </div>
+        <>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>
+            Phase 3 motion + sound is live in this preview only (never in Edit mode/the editor) — move the cursor near the
+            hero button/image, watch the ambient field mesh react, and try the mute control bottom-right.
+          </p>
+          <div style={{ position: 'relative', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} data-testid="public-preview">
+            <PublicPage sections={sections} />
+          </div>
+        </>
       )}
     </div>
   );

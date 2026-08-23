@@ -37,16 +37,16 @@ not as each phase ships, since a later phase can regress an earlier one.
 - [ ] Draft vs. published states behave correctly per page (not site-wide) — out of scope this phase; the demo harness is local-state only and isn't wired to the real Supabase `pages` table yet (see the `// TODO(phase-4-or-later)` marker in CanvasDemo.tsx) — re-check once a later phase wires the editor to real draft/publish rows
 
 ## Phase 3 — Motion + Sound
-- [ ] Magnetic cursor attraction works on intended elements
-- [ ] Repulsion field behaves correctly near the pointer
-- [ ] Elements-react-to-each-other effect looks right, no jitter/lag
-- [ ] Motion layer is present on public site + preview, absent in the editor
-- [ ] Motion respects `prefers-reduced-motion`
-- [ ] Interaction sound effects fire on the right triggers, sound reasonable
-- [ ] Ambient audio fades in on first interaction (not blocked/broken by autoplay policy)
-- [ ] Mute/unmute control is visible and works, and persists the visitor's choice
-- [ ] Sound + motion feel synced, not fighting each other
-- [ ] No motion/audio memory leaks or runaway CPU on a long-idle page (leave a tab open, check)
+- [x] Magnetic cursor attraction works on intended elements — verified locally (Playwright: moving the cursor near a hero/button/image/etc. block produces a non-identity `translate3d(...) scale(...)` on that block's wrapper, easing back to identity once the cursor moves away; different block types pull at different strengths/polarities per `src/lib/motion/presets.ts` — e.g. the CTA button reaches ~18px of pull near lock-on, the hero heading only a few px, and the quote block has *negative* polarity and gently recedes instead of attracting)
+- [x] Repulsion field behaves correctly near the pointer — verified locally (Playwright: sampled the ambient canvas's pixel data in a region, moved the cursor into it, confirmed >4000 pixels changed — the field-line mesh's points visibly ease away from the cursor within their influence radius, per `src/lib/motion/ambientFieldRenderer.ts`)
+- [x] Elements-react-to-each-other effect looks right, no jitter/lag — verified locally (Playwright: hovering near the strong-polarity button also measurably nudges the hero/image/quote/columns/carousel blocks elsewhere on the page — a real consequence of the button's own displacement via the coupling pass in `magneticField.ts`, not a canned second animation; magnitudes decay smoothly with distance, no visible jitter)
+- [x] Motion layer is present on public site + preview, absent in the editor — verified locally (Playwright: `/dev/canvas-demo`'s Preview-as-visitor mode has the ambient canvas, magnetic nodes, and mute control; Edit mode — including its Mobile-preview toggle, which shares `ReflowedSection` with the public renderer — has zero of any of them; `CanvasEditor.tsx` itself has no diff at all in this phase)
+- [x] Motion respects `prefers-reduced-motion` — verified locally (Playwright with `reducedMotion: 'reduce'` emulated: block transforms never leave identity, the rAF loop never starts; a `[data-magnetic-static]` CSS-only hover highlight is used instead; also verified the same fallback engages automatically for a coarse/touch pointer, e.g. iPhone emulation, independent of the OS motion setting)
+- [x] Interaction sound effects fire on the right triggers, sound reasonable — verified locally (Playwright, via a QA-only trigger counter in `audioEngine.ts`: hovering into a CTA button's field fires the field-enter tone, approaching lock-on additionally fires the lock-on tone, clicking fires the click tone; the three are deliberately different synthesized timbres — sine blip / sawtooth downward zap / square confirm-click — actual audio quality is subjective and worth the owner's own ears, see summary)
+- [x] Ambient audio fades in on first interaction (not blocked/broken by autoplay policy) — verified locally (Playwright: `AudioContext` is not constructed at all before the first click/keydown — confirmed via debug snapshot, and no "AudioContext was not allowed to start" warning ever appears in the console — then is created and running immediately after, with the ambient pad started and its gain ramping in)
+- [x] Mute/unmute control is visible and works, and persists the visitor's choice — verified locally (Playwright: the control is visible in both normal and reduced-motion contexts, clicking it flips `aria-pressed` and the audio engine's actual gain/mute state together, and the choice survives a full page reload via `localStorage`)
+- [ ] Sound + motion feel synced, not fighting each other — inherently subjective (tone character, timing feel, ambient pad mix); implemented and internally consistent (see summary) but genuinely worth the owner listening/watching hands-on rather than trusting an automated check here
+- [x] No motion/audio memory leaks or runaway CPU on a long-idle page (leave a tab open, check) — verified locally (Playwright: instrumented `requestAnimationFrame`, nudged the field once, then measured zero rAF calls over a 2s idle window afterward — both the magnetic-field loop and the ambient-canvas loop stop scheduling frames once everything has settled, and only resume on the next pointer move)
 
 ## Phase 4 — Contact form + media library + nested containers
 - [ ] Contact form submits successfully; submission lands in the inbox

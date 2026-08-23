@@ -273,6 +273,20 @@ h6 {
   margin: 0;
 }
 
+/* Reduced-motion / coarse-pointer fallback for magnetic blocks (see
+   MagneticBlock.tsx, src/lib/motion/) — a single instant color highlight on
+   hover/focus instead of the spring-driven transform physics. The sitewide
+   reduced-motion block above already forces transition-duration to ~0 for
+   every element, so under prefers-reduced-motion this still applies, just
+   instantly rather than eased — some feedback, zero continuous animation. */
+[data-magnetic-static] {
+  transition: filter var(--duration-fast) var(--ease-standard);
+}
+[data-magnetic-static]:hover,
+[data-magnetic-static]:focus-within {
+  filter: brightness(1.08);
+}
+
 /* ---- small set of shared component classes (radius/shadow scale demo + plain-HTML use) ---- */
 .card {
   background: var(--surface-card);
