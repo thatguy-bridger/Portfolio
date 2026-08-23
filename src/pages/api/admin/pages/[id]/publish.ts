@@ -1,4 +1,6 @@
 import type { APIRoute } from 'astro';
+import type { PageSection } from '../../../../../lib/blocks/types';
+import { logPublishRevision } from '../../../../../lib/history/log';
 import { getSupabase } from '../../../../../lib/supabase-server';
 
 function json(body: unknown, status = 200) {
@@ -34,6 +36,14 @@ export const POST: APIRoute = async ({ params }) => {
       .maybeSingle();
     if (error) return json({ error: error.message }, 502);
     if (!data) return json({ error: 'Page not found.' }, 404);
+
+    // Phase 5: log this publish into revision_history so it shows up in the
+    // page's History view and is available to roll back to later. The
+    // publish above has already succeeded by this point — a failure logging
+    // it is swallowed (see logPublishRevision's doc comment) rather than
+    // reported as a publish failure.
+    await logPublishRevision(id, page.draft_blocks as PageSection[]);
+
     return json({ page: data });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : 'Server is not configured correctly.' }, 500);

@@ -1,4 +1,6 @@
 import type { APIRoute } from 'astro';
+import type { PageSection } from '../../../../lib/blocks/types';
+import { maybeLogDraftSaveRevision } from '../../../../lib/history/log';
 import { getSupabase } from '../../../../lib/supabase-server';
 import { isValidPageBlocks, normalizePagePath, normalizePageTitle } from '../../../../lib/pages';
 
@@ -68,6 +70,14 @@ export const PATCH: APIRoute = async ({ params, request }) => {
       return json({ error: error.message }, 502);
     }
     if (!data) return json({ error: 'Page not found.' }, 404);
+
+    // Best-effort, throttled draft-revision logging (Phase 5) — see
+    // maybeLogDraftSaveRevision's doc comment for why this is time-based.
+    // The actual save has already succeeded by this point (data is
+    // non-null), so a hiccup here is swallowed rather than turned into a
+    // 500 for what was, from the editor's perspective, a successful save.
+    if (draft_blocks !== undefined) await maybeLogDraftSaveRevision(id, draft_blocks as PageSection[]);
+
     return json({ page: data });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : 'Server is not configured correctly.' }, 500);

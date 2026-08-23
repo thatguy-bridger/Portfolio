@@ -6,9 +6,10 @@
 // draft_blocks, via useAutosave) and Publish (an explicit, deliberate
 // action — never automatic — that copies draft_blocks to published_blocks
 // server-side, see /api/admin/pages/[id]/publish.ts).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createSection } from '../../lib/blocks/registry';
 import type { PageSection } from '../../lib/blocks/types';
+import { useUndoRedo } from '../../lib/history/useUndoRedo';
 import type { AutosaveStatus } from '../../lib/useAutosave';
 import { useAutosave } from '../../lib/useAutosave';
 import { CanvasEditor } from '../canvas/CanvasEditor';
@@ -37,7 +38,13 @@ async function patchPage(id: string, body: Record<string, unknown>) {
 }
 
 export function PageEditor({ page }: { page: AdminPageRow }) {
-  const [sections, setSections] = useState<PageSection[]>(page.draft_blocks ?? []);
+  // Session undo/redo (Phase 5) — local-only, in-memory, resets on reload;
+  // see useUndoRedo.ts. `setSections` is a drop-in replacement for the
+  // useState setter this used to be (same functional-updater support), so
+  // every existing call site below (updateActiveBlocks, addSection, etc.)
+  // is unchanged. The durable, server-persisted history/rollback layer is
+  // separate — see /admin/pages/[id]/history and src/lib/history/log.ts.
+  const { state: sections, set: setSections, undo, redo, canUndo, canRedo } = useUndoRedo<PageSection[]>(page.draft_blocks ?? []);
   const [activeIndex, setActiveIndex] = useState(0);
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [status, setStatus] = useState<'draft' | 'published'>(page.status);
@@ -46,6 +53,35 @@ export function PageEditor({ page }: { page: AdminPageRow }) {
   const [publishError, setPublishError] = useState<string | null>(null);
 
   const { status: saveStatus, flush } = useAutosave(sections, (value) => patchPage(page.id, { draft_blocks: value }));
+
+  // Ctrl/Cmd+Z to undo, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y to redo — but only
+  // when focus isn't inside a text-editing context (a block's contentEditable
+  // field, or a settings-panel input/textarea/select). Those already have
+  // their own native undo stack (the browser's, for contentEditable/inputs);
+  // stealing Ctrl+Z there would fight the user's expectation mid-typing
+  // instead of undoing a canvas-level edit.
+  useEffect(() => {
+    function isTextEditingContext(el: Element | null): boolean {
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el as HTMLElement).isContentEditable;
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+      if (!mod || (key !== 'z' && key !== 'y')) return;
+      if (isTextEditingContext(document.activeElement)) return;
+      if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      } else {
+        e.preventDefault();
+        undo();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [undo, redo]);
 
   const active = sections[activeIndex] ?? sections[0];
 
@@ -94,10 +130,22 @@ export function PageEditor({ page }: { page: AdminPageRow }) {
           <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
             {page.path} · <span className="badge">{status}</span>
             {publishedAt ? ` · last published ${new Date(publishedAt).toLocaleString()}` : ' · never published'}
+            {' · '}
+            <a href={`/admin/pages/${page.id}/history`} style={{ color: 'var(--text-muted)' }}>History</a>
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <SaveStatusLabel status={saveStatus} />
+          {mode === 'edit' && (
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button type="button" onClick={undo} disabled={!canUndo} title="Undo (Ctrl/Cmd+Z)" style={iconBtn(!canUndo)}>
+                ↶ Undo
+              </button>
+              <button type="button" onClick={redo} disabled={!canRedo} title="Redo (Ctrl/Cmd+Shift+Z)" style={iconBtn(!canRedo)}>
+                ↷ Redo
+              </button>
+            </div>
+          )}
           <ModeButton active={mode === 'edit'} onClick={() => setMode('edit')}>Edit</ModeButton>
           <ModeButton active={mode === 'preview'} onClick={() => setMode('preview')}>Preview as visitor</ModeButton>
           <button type="button" onClick={handlePublish} disabled={publishing} style={publishBtn}>
@@ -197,6 +245,20 @@ const ghostBtn: React.CSSProperties = {
   background: 'none',
   color: 'var(--text-body)',
 };
+
+function iconBtn(disabled: boolean): React.CSSProperties {
+  return {
+    border: '1px solid var(--border-default)',
+    borderRadius: 'var(--radius-pill)',
+    padding: '6px 12px',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: disabled ? 'default' : 'pointer',
+    background: 'var(--surface-card)',
+    color: disabled ? 'var(--text-muted)' : 'var(--text-body)',
+    opacity: disabled ? 0.5 : 1,
+  };
+}
 
 const publishBtn: React.CSSProperties = {
   border: 'none',

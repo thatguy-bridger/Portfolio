@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { runDiagnostics } from '../../lib/diagnostics';
+
+// Middleware already guarantees Astro.locals.admin here (see middleware.ts).
+const admin = Astro.locals.admin!;
+const checks = await runDiagnostics(admin);
+const allOk = checks.every((c) => c.ok);
+---
+
+<BaseLayout title="Diagnostics — Admin — Portfolio">
+  <main style="max-width: 720px; margin: 0 auto; padding: 48px 20px 96px; display: flex; flex-direction: column; gap: var(--space-6);">
+    <div>
+      <a href="/admin" style="font-size: 12px; color: var(--text-muted);">&larr; Admin</a>
+      <h1 style="font-size: var(--text-3xl); color: var(--text-heading); margin-top: 4px;">Diagnostics</h1>
+      <p style="color: var(--text-muted); font-size: var(--text-sm); margin: 4px 0 0;">
+        Real connectivity/health checks, run fresh on every load of this page —
+        {allOk ? 'everything currently checks out.' : 'at least one check is currently failing (see below).'}
+      </p>
+    </div>
+
+    <section style="display: flex; flex-direction: column; gap: var(--space-3);">
+      {checks.map((check) => (
+        <div class="card" style={`display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-left: 3px solid ${check.ok ? '#16a34a' : '#dc2626'};`}>
+          <span style={`font-size: 16px; line-height: 1.4; color: ${check.ok ? '#16a34a' : '#dc2626'};`}>{check.ok ? '✓' : '✗'}</span>
+          <div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-heading);">{check.label}</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">{check.detail}</div>
+          </div>
+        </div>
+      ))}
+    </section>
+
+    <a href="/admin/diagnostics" class="btn" style="align-self: flex-start; text-decoration: none;">Re-run checks</a>
+  </main>
+</BaseLayout>

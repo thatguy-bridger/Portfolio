@@ -3,22 +3,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { SignOutButton } from '../../components/admin/SignOutButton';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { ThemeSettingsPanel } from '../../components/ThemeSettingsPanel';
-import { getSupabase } from '../../lib/supabase-server';
+import { runDiagnostics } from '../../lib/diagnostics';
 
 // Middleware already redirects signed-out visitors to /admin/login before
 // this ever renders — Astro.locals.admin is guaranteed non-null here.
 const admin = Astro.locals.admin!;
 
-// A first, minimal connectivity check — this becomes the real Diagnostics
-// screen in Phase 5. For now it just proves the Supabase env vars are wired
-// correctly, since that can't be verified by a build/typecheck alone.
-let supabaseStatus: { ok: boolean; detail: string };
-try {
-  const { error, count } = await getSupabase().from('pages').select('*', { count: 'exact', head: true });
-  supabaseStatus = error ? { ok: false, detail: error.message } : { ok: true, detail: `Connected — ${count ?? 0} page(s) in the database.` };
-} catch (err) {
-  supabaseStatus = { ok: false, detail: err instanceof Error ? err.message : 'Unknown error' };
-}
+// Phase 4 had a one-off inline Supabase-connectivity check here ("this
+// becomes the real Diagnostics screen in Phase 5"). It now IS that screen —
+// this dashboard just shows a one-line overall pass/fail pulled from the
+// same shared checks (src/lib/diagnostics.ts) and links to the full
+// per-check breakdown at /admin/diagnostics.
+const checks = await runDiagnostics(admin);
+const allOk = checks.every((c) => c.ok);
+const failing = checks.filter((c) => !c.ok);
 ---
 
 <BaseLayout title="Admin — Portfolio">
@@ -33,7 +31,8 @@ try {
 
     <section class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
       <p style="margin: 0; color: var(--text-body); font-size: var(--text-sm);">
-        Supabase: {supabaseStatus.ok ? '✅' : '❌'} {supabaseStatus.detail}
+        {allOk ? '✅ All diagnostics passing.' : `❌ ${failing.length} diagnostic check(s) failing.`}
+        {' '}<a href="/admin/diagnostics" style="color: var(--accent-primary);">View diagnostics &rarr;</a>
       </p>
       <SignOutButton client:load />
     </section>
@@ -50,6 +49,10 @@ try {
       <a class="card" href="/admin/media" style="text-decoration: none; color: inherit;">
         <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Media library</h3>
         <p style="color: var(--text-muted); font-size: var(--text-sm); margin: 0;">Uploaded images.</p>
+      </a>
+      <a class="card" href="/admin/diagnostics" style="text-decoration: none; color: inherit;">
+        <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Diagnostics</h3>
+        <p style="color: var(--text-muted); font-size: var(--text-sm); margin: 0;">Connectivity &amp; health checks.</p>
       </a>
     </section>
 
