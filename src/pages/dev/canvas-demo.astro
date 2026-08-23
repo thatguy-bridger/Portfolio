@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { CanvasDemo } from '../../components/dev/CanvasDemo';
+---
+
+<!--
+  Dev-only harness for the Phase 2 block registry + freeform canvas —
+  see QA_CHECKLIST.md's Phase 2 section. Entirely local-state, no Firebase/
+  Supabase calls (see CanvasDemo.tsx's header comment). Not linked from any
+  real page.
+
+  The design-system tokens (theme, fonts, accent colors — see the branch
+  description) are being ported on a sibling branch and aren't merged into
+  this branch's lineage yet, so the CSS custom properties every block
+  component references (--surface-card, --accent-primary, --radius-md, …)
+  have no real definitions here yet. The fallback values below exist ONLY
+  so this dev page is visually testable standalone right now — once the
+  design-system branch merges, its real token definitions (likely living in
+  BaseLayout.astro or a global stylesheet) take over and this block becomes
+  redundant/removable. Nothing outside this page defines these tokens.
+-->
+<style>
+  :root {
+    --surface-card: #1f2937;
+    --surface-panel: #111827;
+    --text-heading: #f9fafb;
+    --text-body: #d1d5db;
+    --text-muted: #9ca3af;
+    --border-default: #374151;
+    --border-strong: #4b5563;
+    --accent-primary: #6366f1;
+    --accent-primary-hover: #4f46e5;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 14px;
+    --radius-pill: 9999px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+  body {
+    background: #0a0a0a;
+    color: var(--text-body);
+    font-family: var(--font-body);
+    margin: 0;
+  }
+</style>
+
+<BaseLayout title="Canvas demo (dev) — Portfolio">
+  <CanvasDemo client:only="react" />
+</BaseLayout>
