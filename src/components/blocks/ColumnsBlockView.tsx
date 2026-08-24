@@ -83,7 +83,7 @@ function slotBtnStyle(active: boolean): React.CSSProperties {
     height: 22,
     fontSize: 12,
     cursor: 'pointer',
-    background: active ? 'var(--accent-primary)' : 'var(--surface-card)',
+    background: active ? 'var(--accent-gradient)' : 'var(--surface-card)',
     color: active ? '#fff' : 'var(--text-muted)',
   };
 }

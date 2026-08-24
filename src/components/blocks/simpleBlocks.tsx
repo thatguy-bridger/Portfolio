@@ -128,7 +128,7 @@ export function ImageTextBlockView({ props, editable, onFieldChange, narrow }: B
 }
 
 const BUTTON_VARIANT_STYLE: Record<string, React.CSSProperties> = {
-  primary: { background: 'var(--accent-primary)', color: '#fff', border: 'none' },
+  primary: { background: 'var(--accent-gradient)', color: '#fff', border: 'none' },
   secondary: { background: 'var(--surface-card)', color: 'var(--text-heading)', border: 'none' },
   outline: { background: 'transparent', color: 'var(--text-heading)', border: '1.5px solid var(--border-default)' },
 };

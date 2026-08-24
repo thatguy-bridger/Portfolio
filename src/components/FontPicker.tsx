@@ -35,7 +35,7 @@ export function FontPicker({
                 fontSize: 11,
                 fontWeight: 600,
                 cursor: 'pointer',
-                background: category === c ? 'var(--accent-primary)' : 'var(--surface-card)',
+                background: category === c ? 'var(--accent-gradient)' : 'var(--surface-card)',
                 color: category === c ? '#fff' : 'var(--text-muted)',
                 textTransform: 'capitalize',
               }}

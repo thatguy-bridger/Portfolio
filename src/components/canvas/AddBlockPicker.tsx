@@ -32,7 +32,7 @@ export function AddBlockPicker({ onAdd }: { onAdd: (type: string) => void }) {
           fontSize: 13,
           fontWeight: 600,
           cursor: 'pointer',
-          background: 'var(--accent-primary)',
+          background: 'var(--accent-gradient)',
           color: '#fff',
           boxShadow: 'var(--shadow-sm)',
         }}

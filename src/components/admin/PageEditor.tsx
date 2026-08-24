@@ -230,7 +230,7 @@ function tabBtn(active: boolean): React.CSSProperties {
     fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
-    background: active ? 'var(--accent-primary)' : 'var(--surface-card)',
+    background: active ? 'var(--accent-gradient)' : 'var(--surface-card)',
     color: active ? '#fff' : 'var(--text-body)',
   };
 }
@@ -267,7 +267,7 @@ const publishBtn: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 700,
   cursor: 'pointer',
-  background: 'var(--accent-primary)',
+  background: 'var(--accent-gradient)',
   color: '#fff',
   boxShadow: 'var(--shadow-sm)',
 };

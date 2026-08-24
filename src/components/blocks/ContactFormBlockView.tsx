@@ -115,7 +115,7 @@ export function ContactFormBlockView({ props, editable, onFieldChange }: BlockCo
             fontSize: 14,
             fontWeight: 600,
             cursor: editable ? 'default' : 'pointer',
-            background: 'var(--accent-primary)',
+            background: 'var(--accent-gradient)',
             color: '#fff',
             boxShadow: 'var(--shadow-sm)',
             opacity: status === 'submitting' ? 0.7 : 1,
