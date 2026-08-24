@@ -9,6 +9,10 @@
 // Two effects come out of the same tick loop:
 //  - Cursor attraction/repulsion (deliverable #2): each node's own
 //    preset.polarity/strength/radius against the live pointer position.
+//    While the pointer is held down (pointerTracker.ts's `pressed`), this
+//    sign flips for every node — attractors repel, the one negative-
+//    polarity type (quote) attracts — reverting the instant the button is
+//    released, cancelled, or the window loses focus.
 //  - Element-to-element reaction (deliverable #3): the `coupling` pass
 //    below — every node also nudges every other node within COUPLING_SPAN,
 //    scaled by how far the *source* node is currently displaced (so it's a
@@ -103,7 +107,17 @@ function tick(now: number) {
   lastTick = now;
 
   const pointerLive = pointerRecentlyActive();
-  const activePointer: Vec2 | null = pointerLive ? getPointer() : null;
+  const pointerState = pointerLive ? getPointer() : null;
+  const activePointer: Vec2 | null = pointerState;
+  // While the pointer is held down, every node's cursor-attraction sign
+  // reverses — attractors (buttons, hero, images, ...) repel, and the one
+  // negative-polarity type (quote) attracts — for as long as the button
+  // stays down. This only negates the *cursor* pull below; the coupling
+  // pass further down stays untouched because `polaritySign` is applied
+  // identically to every node, so the `node.preset.polarity ===
+  // other.preset.polarity` comparison it relies on is unaffected (flipping
+  // both sides of an equality by the same factor preserves it).
+  const polaritySign = pointerState?.pressed ? -1 : 1;
 
   // Pass 1: rest centers + current ancestor-scale factor (needed by the pointer/coupling passes and by paint, respectively).
   for (const node of nodes.values()) {
@@ -125,7 +139,7 @@ function tick(now: number) {
       const inField = dist < node.preset.radius;
       if (inField && dist > 0.01) {
         const falloff = smoothstep(1 - dist / node.preset.radius);
-        const pull = node.preset.polarity * node.preset.strength * falloff * node.preset.maxOffset;
+        const pull = node.preset.polarity * polaritySign * node.preset.strength * falloff * node.preset.maxOffset;
         tx += (dx / dist) * pull;
         ty += (dy / dist) * pull;
         scaleBoost = falloff * (node.preset.maxScale - 1);
