@@ -1,5 +1,6 @@
 // Shared page-path validation for the admin pages endpoints (create + rename)
 // — one rule set so the two can't quietly drift apart.
+import { getSupabase } from './supabase-server';
 
 const MAX_PATH_LENGTH = 200;
 const MAX_TITLE_LENGTH = 200;
@@ -39,6 +40,34 @@ export function normalizePageTitle(input: unknown): string | null {
  * a PageSection[] before it lands in the database — e.g. a malformed/partial
  * request body, not a trusted client bug.
  */
+/**
+ * Returns the id of the `pages` row at path "/" (the site's homepage),
+ * creating it as an empty draft first if it doesn't exist yet. The homepage
+ * is otherwise a completely ordinary page — this just means the admin
+ * dashboard's "Homepage" shortcut always has somewhere to link, without the
+ * owner needing to know to create a page at the exact path "/" themselves.
+ */
+export async function getOrCreateHomepage(): Promise<string> {
+  const supabase = getSupabase();
+  const { data: existing } = await supabase.from('pages').select('id').eq('path', '/').maybeSingle();
+  if (existing) return existing.id;
+
+  const { data: created, error } = await supabase
+    .from('pages')
+    .insert({ path: '/', title: 'Home', status: 'draft', draft_blocks: [] })
+    .select('id')
+    .single();
+  if (!error) return created.id;
+
+  // Lost a race with a concurrent request that created it first (unique
+  // violation on `pages.path`) — just look it up instead of failing.
+  if (error.code === '23505') {
+    const { data: retry } = await supabase.from('pages').select('id').eq('path', '/').single();
+    if (retry) return retry.id;
+  }
+  throw new Error(error.message);
+}
+
 export function isValidPageBlocks(value: unknown): value is unknown[] {
   if (!Array.isArray(value)) return false;
   return value.every(

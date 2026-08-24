@@ -4,6 +4,7 @@ import { SignOutButton } from '../../components/admin/SignOutButton';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { ThemeSettingsPanel } from '../../components/ThemeSettingsPanel';
 import { runDiagnostics } from '../../lib/diagnostics';
+import { getOrCreateHomepage } from '../../lib/pages';
 
 // Middleware already redirects signed-out visitors to /admin/login before
 // this ever renders — Astro.locals.admin is guaranteed non-null here.
@@ -17,6 +18,14 @@ const admin = Astro.locals.admin!;
 const checks = await runDiagnostics(admin);
 const allOk = checks.every((c) => c.ok);
 const failing = checks.filter((c) => !c.ok);
+
+// The homepage (portfolio.bridgerjones.com, path "/") is just a normal row
+// in `pages` like any other — nothing special about it structurally — but
+// there's otherwise no obvious way to reach it from admin without already
+// knowing to create a page at the exact path "/" via the generic form. This
+// gets-or-creates that row so a "Homepage" shortcut always has somewhere to
+// link straight into the canvas editor.
+const homepageId = await getOrCreateHomepage();
 ---
 
 <BaseLayout title="Admin — Portfolio">
@@ -38,6 +47,10 @@ const failing = checks.filter((c) => !c.ok);
     </section>
 
     <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-3);">
+      <a class="card" href={`/admin/pages/${homepageId}`} style="text-decoration: none; color: inherit;">
+        <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Homepage</h3>
+        <p style="color: var(--text-muted); font-size: var(--text-sm); margin: 0;">Edit portfolio.bridgerjones.com.</p>
+      </a>
       <a class="card" href="/admin/pages" style="text-decoration: none; color: inherit;">
         <h3 style="font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Pages</h3>
         <p style="color: var(--text-muted); font-size: var(--text-sm); margin: 0;">Edit content, draft &amp; publish.</p>

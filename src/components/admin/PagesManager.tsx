@@ -114,7 +114,7 @@ export function PagesManager() {
             <div key={p.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-heading)' }}>
-                  {p.title} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({p.path})</span>
+                  {p.title} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({p.path === '/' ? 'Homepage' : p.path})</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   <span className="badge" style={{ marginRight: 6 }}>{p.status}</span>
