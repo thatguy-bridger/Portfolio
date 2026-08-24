@@ -14,8 +14,11 @@ export function normalizePagePath(input: unknown): string | null {
   const trimmed = input.trim();
   if (!trimmed || trimmed.length > MAX_PATH_LENGTH) return null;
   if (trimmed === '/') return '/';
-  if (!trimmed.startsWith('/')) return null;
-  const path = trimmed.replace(/\/+$/, '');
+  // The leading "/" is optional from the user's point of view — "about" and
+  // "/about" should create the same page — so it's added here rather than
+  // rejecting input that's missing it.
+  const withSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  const path = withSlash.replace(/\/+$/, '');
   const segments = path.slice(1).split('/');
   if (segments.some((s) => !PATH_SEGMENT_RE.test(s))) return null;
   return path;
