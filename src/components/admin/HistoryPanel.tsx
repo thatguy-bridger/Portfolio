@@ -87,7 +87,7 @@ export function HistoryPanel({ pageId }: { pageId: string }) {
             <div key={revision.id} className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="badge" style={revision.event_type === 'publish' ? { background: 'var(--accent-primary)', color: '#fff' } : undefined}>
+                  <span className="badge" style={revision.event_type === 'publish' ? { background: 'var(--accent-gradient)', color: '#fff' } : undefined}>
                     {revision.event_type === 'publish' ? 'Published' : 'Draft saved'}
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{new Date(revision.created_at).toLocaleString()}</span>

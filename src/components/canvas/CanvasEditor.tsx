@@ -313,7 +313,7 @@ export function CanvasEditor({
             fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
-            background: mobilePreview ? 'var(--accent-primary)' : 'var(--surface-card)',
+            background: mobilePreview ? 'var(--accent-gradient)' : 'var(--surface-card)',
             color: mobilePreview ? '#fff' : 'var(--text-body)',
           }}
         >

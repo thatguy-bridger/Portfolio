@@ -113,7 +113,7 @@ export function CarouselBlockView({ props, editable, onFieldChange, blockId, act
               key={slide.id}
               onClick={() => setActive(i)}
               aria-label={`Go to slide ${i + 1}`}
-              style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', background: i === clamped ? 'var(--accent-primary)' : 'var(--border-strong)' }}
+              style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', background: i === clamped ? 'var(--accent-gradient)' : 'var(--border-strong)' }}
             />
           ))}
         </div>
@@ -157,7 +157,7 @@ function slotBtnStyle(active: boolean): React.CSSProperties {
     height: 20,
     fontSize: 11,
     cursor: 'pointer',
-    background: active ? 'var(--accent-primary)' : 'var(--surface-card)',
+    background: active ? 'var(--accent-gradient)' : 'var(--surface-card)',
     color: active ? '#fff' : 'var(--text-muted)',
     flexShrink: 0,
   };

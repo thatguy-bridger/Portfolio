@@ -105,7 +105,7 @@ export function CanvasDemo() {
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: i === activeIndex ? 'var(--accent-primary)' : 'var(--surface-card)',
+                  background: i === activeIndex ? 'var(--accent-gradient)' : 'var(--surface-card)',
                   color: i === activeIndex ? '#fff' : 'var(--text-body)',
                 }}
               >
@@ -167,7 +167,7 @@ function ModeButton({ active, onClick, children }: { active: boolean; onClick: (
         fontSize: 13,
         fontWeight: 600,
         cursor: 'pointer',
-        background: active ? 'var(--accent-primary)' : 'var(--surface-card)',
+        background: active ? 'var(--accent-gradient)' : 'var(--surface-card)',
         color: active ? '#fff' : 'var(--text-body)',
       }}
     >

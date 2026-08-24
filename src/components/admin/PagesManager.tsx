@@ -150,7 +150,7 @@ const primaryBtn: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
-  background: 'var(--accent-primary)',
+  background: 'var(--accent-gradient)',
   color: '#fff',
 };
 const ghostBtn: React.CSSProperties = {

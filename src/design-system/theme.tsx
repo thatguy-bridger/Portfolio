@@ -1,5 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ACCENT_PRESETS, deriveAccentVariants, type AccentVariants } from './accent';
+import {
+  ACCENT_PRESETS,
+  DEFAULT_CUSTOM_GRADIENT,
+  DEFAULT_GRADIENT_ANGLE,
+  deriveAccentVariants,
+  type AccentGradient,
+  type AccentVariants,
+  type GradientStops,
+} from './accent';
 import {
   DEFAULT_BODY_FONT,
   DEFAULT_DISPLAY_FONT,
@@ -18,8 +26,8 @@ interface ThemeContextValue {
   cycleColorScheme: () => void;
   accentId: string;
   setAccentPreset: (id: string) => void;
-  customAccentHex: string;
-  setCustomAccent: (hex: string) => void;
+  customAccentGradient: AccentGradient;
+  setCustomAccent: (gradient: AccentGradient) => void;
   accentVariants: AccentVariants;
   displayFont: FontDef;
   bodyFont: FontDef;
@@ -67,10 +75,41 @@ function readColorSchemeFromGlobal(): ColorScheme {
   return stored === 'auto' ? 'system' : stored;
 }
 
+/**
+ * Parses whatever is stored under CUSTOM_ACCENT_KEY into an AccentGradient.
+ * Pre-gradient builds stored a single "#rrggbb" hex string there — JSON.parse
+ * throws on that, so it's treated as a flat 3-stop gradient of that same
+ * color, keeping an existing custom-accent user's actual color instead of
+ * discarding it. Anything else unparseable/malformed falls back to the
+ * default gradient rather than throwing or leaving the UI blank.
+ */
+function parseStoredGradient(raw: string | null): AccentGradient {
+  if (!raw) return DEFAULT_CUSTOM_GRADIENT;
+  try {
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      Array.isArray(parsed.colors) &&
+      parsed.colors.length === 3 &&
+      parsed.colors.every((c: unknown) => typeof c === 'string')
+    ) {
+      const angle = typeof parsed.angle === 'number' && Number.isFinite(parsed.angle) ? parsed.angle : DEFAULT_GRADIENT_ANGLE;
+      return { colors: parsed.colors as GradientStops, angle };
+    }
+  } catch {
+    const trimmed = raw.trim();
+    if (/^#[0-9a-fA-F]{3,8}$/.test(trimmed)) {
+      return { colors: [trimmed, trimmed, trimmed], angle: DEFAULT_GRADIENT_ANGLE };
+    }
+  }
+  return DEFAULT_CUSTOM_GRADIENT;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>('system');
   const [accentId, setAccentId] = useState<string>('indigo');
-  const [customAccentHex, setCustomAccentHex] = useState<string>('#6366f1');
+  const [customAccentGradient, setCustomAccentGradient] = useState<AccentGradient>(DEFAULT_CUSTOM_GRADIENT);
   const [displayFontId, setDisplayFontId] = useState(DEFAULT_DISPLAY_FONT.id);
   const [bodyFontId, setBodyFontId] = useState(DEFAULT_BODY_FONT.id);
   const [monoFontId, setMonoFontId] = useState(DEFAULT_MONO_FONT.id);
@@ -84,7 +123,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setColorSchemeState(readColorSchemeFromGlobal());
     setAccentId(readLS(ACCENT_KEY) ?? 'indigo');
-    setCustomAccentHex(readLS(CUSTOM_ACCENT_KEY) ?? '#6366f1');
+    setCustomAccentGradient(parseStoredGradient(readLS(CUSTOM_ACCENT_KEY)));
     setDisplayFontId(readLS(DISPLAY_FONT_KEY) ?? DEFAULT_DISPLAY_FONT.id);
     setBodyFontId(readLS(BODY_FONT_KEY) ?? DEFAULT_BODY_FONT.id);
     setMonoFontId(readLS(MONO_FONT_KEY) ?? DEFAULT_MONO_FONT.id);
@@ -102,12 +141,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const bodyFont = findFont(bodyFontId, DEFAULT_BODY_FONT);
   const monoFont = findFont(monoFontId, DEFAULT_MONO_FONT);
 
-  const accentHex = useMemo(() => {
-    if (accentId === 'custom') return customAccentHex;
-    return ACCENT_PRESETS.find((p) => p.id === accentId)?.hex ?? ACCENT_PRESETS[0].hex;
-  }, [accentId, customAccentHex]);
+  const activeGradient = useMemo<AccentGradient>(() => {
+    if (accentId === 'custom') return customAccentGradient;
+    const preset = ACCENT_PRESETS.find((p) => p.id === accentId);
+    return { colors: preset?.colors ?? ACCENT_PRESETS[0].colors, angle: DEFAULT_GRADIENT_ANGLE };
+  }, [accentId, customAccentGradient]);
 
-  const accentVariants = useMemo(() => deriveAccentVariants(accentHex), [accentHex]);
+  const accentVariants = useMemo(
+    () => deriveAccentVariants(activeGradient.colors, activeGradient.angle),
+    [activeGradient],
+  );
 
   function setColorScheme(scheme: ColorScheme) {
     setColorSchemeState(scheme);
@@ -124,6 +167,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
+    root.style.setProperty('--accent-gradient', accentVariants.gradient);
+    root.style.setProperty('--accent-gradient-hover', accentVariants.gradientHover);
     root.style.setProperty('--accent-primary', accentVariants.base);
     root.style.setProperty('--accent-primary-hover', accentVariants.hover);
     root.style.setProperty('--link', accentVariants.base);
@@ -156,11 +201,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setAccentId(id);
       writeLS(ACCENT_KEY, id);
     },
-    customAccentHex,
-    setCustomAccent: (hex) => {
-      setCustomAccentHex(hex);
+    customAccentGradient,
+    setCustomAccent: (gradient) => {
+      setCustomAccentGradient(gradient);
       setAccentId('custom');
-      writeLS(CUSTOM_ACCENT_KEY, hex);
+      writeLS(CUSTOM_ACCENT_KEY, JSON.stringify(gradient));
       writeLS(ACCENT_KEY, 'custom');
     },
     accentVariants,

@@ -171,7 +171,7 @@ function panelButtonStyle(primary: boolean): React.CSSProperties {
     fontSize: 11,
     fontWeight: 600,
     cursor: 'pointer',
-    background: primary ? 'var(--accent-primary)' : 'var(--surface-card)',
+    background: primary ? 'var(--accent-gradient)' : 'var(--surface-card)',
     color: primary ? '#fff' : 'var(--text-body)',
   };
 }

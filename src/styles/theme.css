@@ -69,6 +69,11 @@
 
   --accent-primary: var(--indigo-500);
   --accent-primary-hover: var(--indigo-600);
+  /* Default 3-stop accent gradient (the "Indigo" preset) — overwritten at runtime by
+     ThemeProvider (src/design-system/theme.tsx) once the accent picker's selection loads;
+     this is only what paints before that JS runs (SSR / first paint). */
+  --accent-gradient: linear-gradient(135deg, #8da7f5, #6366f1, #5f39ed);
+  --accent-gradient-hover: linear-gradient(135deg, #6e84eb, #4f46e5, #561fde);
   --accent-secondary: var(--purple-400);
   --accent-warm: var(--orange-400);
   --accent-alert: var(--red-500);
@@ -177,6 +182,8 @@
     --text-muted: var(--gray-500);
     --accent-primary: var(--indigo-600);
     --accent-primary-hover: var(--indigo-700);
+    --accent-gradient: linear-gradient(135deg, #6e84eb, #4f46e5, #561fde);
+    --accent-gradient-hover: linear-gradient(135deg, #5c6fd4, #4338ca, #532da7);
     --accent-secondary: var(--purple-600);
     --accent-warm: var(--orange-600);
     --link: var(--indigo-600);
@@ -204,6 +211,8 @@
   --text-muted: var(--gray-500);
   --accent-primary: var(--indigo-600);
   --accent-primary-hover: var(--indigo-700);
+  --accent-gradient: linear-gradient(135deg, #6e84eb, #4f46e5, #561fde);
+  --accent-gradient-hover: linear-gradient(135deg, #5c6fd4, #4338ca, #532da7);
   --accent-secondary: var(--purple-600);
   --accent-warm: var(--orange-600);
   --link: var(--indigo-600);
@@ -330,11 +339,11 @@ h6 {
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 .btn-primary {
-  background: var(--accent-primary);
+  background: var(--accent-gradient);
   color: #fff;
 }
 .btn-primary:hover {
-  background: var(--accent-primary-hover);
+  background: var(--accent-gradient-hover);
   box-shadow: var(--shadow-glow-accent);
 }
 .btn-secondary {
