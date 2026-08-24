@@ -26,7 +26,13 @@ export function SettingsPanel({
 
   return (
     <div
+      // An overlay, not a layout sibling — floats on top of the canvas
+      // instead of squeezing it narrower. Positioned relative to the
+      // (position: relative) row wrapper in CanvasEditor.tsx.
       style={{
+        position: 'absolute',
+        top: 12,
+        right: 12,
         width: 260,
         flexShrink: 0,
         display: 'flex',
@@ -36,9 +42,10 @@ export function SettingsPanel({
         borderRadius: 'var(--radius-md)',
         background: 'var(--surface-panel)',
         border: '1px solid var(--border-default)',
-        boxShadow: 'var(--shadow-sm)',
-        maxHeight: 560,
+        boxShadow: 'var(--shadow-lg)',
+        maxHeight: 'calc(100vh - 24px)',
         overflowY: 'auto',
+        zIndex: 2500,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -1,8 +1,8 @@
 // The freeform block-canvas editor — one section's worth of CanvasBlocks,
-// absolutely positioned and directly manipulable: drag to move (via the
-// small handle pill shown above a selected block, not drag-anywhere — that
-// would fight with inline text editing, which needs ordinary clicks/
-// selection to work inside the block), 8 Canva/Slides-style resize handles,
+// absolutely positioned and directly manipulable: drag to move by pressing
+// down anywhere on the block itself (a plain click, without moving, just
+// selects it — see startDrag/onDragMove — so this doubles as the click
+// target too, no separate handle needed), 8 Canva/Slides-style resize handles,
 // snapping/alignment guides against the canvas bounds and every other
 // block's edges/centers (snap.ts), a registry-driven "Add block" picker and
 // settings panel, and drag-into/out-of a Columns/Carousel slot. Adapted
@@ -118,10 +118,15 @@ export function CanvasEditor({
 
   function startDrag(e: React.PointerEvent, id: string, mode: 'move' | 'resize', handle?: ResizeHandle) {
     const block = blocks.find((b) => b.id === id);
-    if (!block || block.locked) return;
-    e.preventDefault();
+    if (!block) return;
     e.stopPropagation();
     select(id);
+    // A locked block is still selectable (e.g. to unlock it again) — it
+    // just doesn't get drag/resize tracking set up. Resize handles are
+    // already hidden for locked blocks, so only the whole-block move-drag
+    // ever reaches this path for one.
+    if (block.locked) return;
+    e.preventDefault();
     dragRef.current = { mode, id, handle, startClientX: e.clientX, startClientY: e.clientY, start: { ...block.position } };
     if (mode === 'move') setDraggingMoveId(id);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -334,7 +339,7 @@ export function CanvasEditor({
           )}
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+        <div style={{ position: 'relative' }}>
           <div
             ref={containerRef}
             data-testid="canvas-container"
@@ -379,10 +384,9 @@ export function CanvasEditor({
                   <div
                     key={b.id}
                     data-testid={`canvas-block-${b.id}`}
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      select(b.id);
-                    }}
+                    onPointerDown={(e) => startDrag(e, b.id, 'move')}
+                    onPointerMove={onDragMove}
+                    onPointerUp={onDragUp}
                     onMouseEnter={() => setHoveredId(b.id)}
                     onMouseLeave={() => setHoveredId((h) => (h === b.id ? null : h))}
                     style={{
@@ -416,28 +420,6 @@ export function CanvasEditor({
 
                     {isSelected && !b.locked && (
                       <>
-                        <div
-                          data-testid="move-handle"
-                          onPointerDown={(e) => startDrag(e, b.id, 'move')}
-                          onPointerMove={onDragMove}
-                          onPointerUp={onDragUp}
-                          title="Drag to move"
-                          style={{
-                            // top: -34, clear of the resize handles (which sit
-                            // within roughly -6..6 of the block edge) — the
-                            // two used to overlap by a few px at -16, which
-                            // made clicks near their shared boundary
-                            // non-deterministically start a resize('n')
-                            // instead of the intended move.
-                            position: 'absolute', top: -34, left: '50%', transform: 'translateX(-50%)',
-                            width: 30, height: 16, cursor: 'grab', borderRadius: 'var(--radius-pill)',
-                            background: 'var(--surface-panel)', border: '1px solid var(--border-strong)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, zIndex: 1000,
-                          }}
-                        >
-                          <Dot /><Dot /><Dot />
-                        </div>
-
                         {RESIZE_HANDLES.map((handle) => (
                           <div
                             key={handle}
@@ -509,10 +491,6 @@ function handlePosition(handle: ResizeHandle): React.CSSProperties {
     case 'sw': return { bottom: half, left: half };
     case 'w': return { top: '50%', left: half, transform: 'translateY(-50%)' };
   }
-}
-
-function Dot() {
-  return <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-muted)' }} />;
 }
 
 function ToolbarButton({ onClick, danger, children }: { onClick: () => void; danger?: boolean; children: React.ReactNode }) {
