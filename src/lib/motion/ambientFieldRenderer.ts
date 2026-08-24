@@ -7,6 +7,9 @@
 // polarities" system — content blocks (magneticField.ts/presets.ts) mostly
 // attract, this backdrop pushes away — while also being pure chrome:
 // `pointer-events: none`, fixed behind the real content, never a11y-facing.
+// While the pointer is held down (pointerTracker.ts's `pressed`), this
+// polarity reverses too — the dots pull in toward the cursor instead of
+// pushing away — reverting the instant the button lifts.
 //
 // Framework-light like the rest of the engine: this file owns the canvas
 // 2D context and its own rAF loop; AmbientFieldCanvas.tsx is just the
@@ -121,6 +124,11 @@ export function createAmbientField(canvas: HTMLCanvasElement): AmbientFieldHandl
 
     const live = pointerRecentlyActive();
     const pointer = live ? getPointer() : null;
+    // While the pointer is held down, the whole field's polarity reverses —
+    // "pull into the mouse" instead of the resting push-away — for as long
+    // as the button stays down (pointerTracker.ts clears `pressed` the
+    // instant it's released, blurred, or cancelled).
+    const polarity = pointer?.pressed ? -1 : 1;
     let anyMoving = false;
 
     for (const p of points) {
@@ -132,7 +140,7 @@ export function createAmbientField(canvas: HTMLCanvasElement): AmbientFieldHandl
         const dist = Math.hypot(dx, dy);
         if (dist < INFLUENCE_RADIUS && dist > 0.01) {
           const falloff = smoothstep(1 - dist / INFLUENCE_RADIUS);
-          const push = falloff * MAX_PUSH;
+          const push = falloff * MAX_PUSH * polarity;
           tx = p.restX + (dx / dist) * push;
           ty = p.restY + (dy / dist) * push;
         }
