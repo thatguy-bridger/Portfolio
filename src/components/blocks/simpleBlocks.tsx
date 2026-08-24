@@ -6,12 +6,19 @@
 import { EditableText } from './fields/EditableText';
 import { EditableImage } from './fields/EditableImage';
 import { type BlockComponentProps, str, bool } from './types';
+import { scaledFontSize } from '../../lib/blocks/scale';
 
 const HEADING_SIZE_PX: Record<string, number> = { normal: 40, large: 56, xlarge: 72 };
 
-export function HeroBlockView({ props, editable, onFieldChange }: BlockComponentProps) {
+export function HeroBlockView({ props, editable, onFieldChange, scale = 1 }: BlockComponentProps) {
   const align = str(props, 'align', 'center') === 'left' ? 'left' : 'center';
-  const size = HEADING_SIZE_PX[str(props, 'headingSize', 'normal')] ?? HEADING_SIZE_PX.normal;
+  // The size preset dropdown (Normal/Large/XL) still picks the *base* size —
+  // the box's own scale factor then multiplies that base, so the preset and
+  // the resize-to-scale behavior compose instead of fighting each other.
+  const baseSize = HEADING_SIZE_PX[str(props, 'headingSize', 'normal')] ?? HEADING_SIZE_PX.normal;
+  const size = scaledFontSize(baseSize, scale, 18, 160);
+  const eyebrowSize = scaledFontSize(13, scale, 10, 26);
+  const subheadingSize = scaledFontSize(18, scale, 12, 42);
   const eyebrow = str(props, 'eyebrow');
   const subheading = str(props, 'subheading');
   if (!editable && !str(props, 'heading') && !eyebrow && !subheading) return null;
@@ -24,7 +31,7 @@ export function HeroBlockView({ props, editable, onFieldChange }: BlockComponent
           onCommit={(v) => onFieldChange('eyebrow', v)}
           placeholder="Eyebrow"
           as="span"
-          style={{ display: editable || eyebrow ? 'block' : 'none', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent-primary)' }}
+          style={{ display: editable || eyebrow ? 'block' : 'none', fontSize: eyebrowSize, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent-primary)' }}
         />
       )}
       <EditableText
@@ -41,16 +48,17 @@ export function HeroBlockView({ props, editable, onFieldChange }: BlockComponent
           onCommit={(v) => onFieldChange('subheading', v)}
           placeholder="Subheading"
           multiline
-          style={{ maxWidth: 640, fontSize: 18, color: 'var(--text-body)', whiteSpace: 'pre-wrap' }}
+          style={{ maxWidth: 640, fontSize: subheadingSize, color: 'var(--text-body)', whiteSpace: 'pre-wrap' }}
         />
       )}
     </div>
   );
 }
 
-export function RichTextBlockView({ props, editable, onFieldChange }: BlockComponentProps) {
+export function RichTextBlockView({ props, editable, onFieldChange, scale = 1 }: BlockComponentProps) {
   const align = str(props, 'textAlign', 'left') === 'center' ? 'center' : 'left';
-  const fontSize = { small: 14, normal: 16, large: 20 }[str(props, 'fontSize', 'normal')] ?? 16;
+  const baseFontSize = { small: 14, normal: 16, large: 20 }[str(props, 'fontSize', 'normal')] ?? 16;
+  const fontSize = scaledFontSize(baseFontSize, scale, 11, 48);
   const content = str(props, 'content');
   if (!editable && !content) return null;
   return (
@@ -94,9 +102,10 @@ export function ImageBlockView({ props, editable, onFieldChange }: BlockComponen
   );
 }
 
-export function ImageTextBlockView({ props, editable, onFieldChange, narrow }: BlockComponentProps) {
+export function ImageTextBlockView({ props, editable, onFieldChange, narrow, scale = 1 }: BlockComponentProps) {
   const imageLeft = str(props, 'imagePosition', 'left') !== 'right';
   const gap = { sm: 12, md: 20, lg: 32 }[str(props, 'gap', 'lg')] ?? 32;
+  const headingSize = scaledFontSize(26, scale, 15, 60);
   const imageUrl = str(props, 'imageUrl');
   const heading = str(props, 'heading');
   const body = str(props, 'body');
@@ -114,7 +123,7 @@ export function ImageTextBlockView({ props, editable, onFieldChange, narrow }: B
         onCommit={(v) => onFieldChange('heading', v)}
         placeholder="Heading"
         as="h3"
-        style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--text-heading)', whiteSpace: narrow ? 'normal' : 'nowrap', overflow: narrow ? 'visible' : 'hidden' }}
+        style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: headingSize, fontWeight: 700, color: 'var(--text-heading)', whiteSpace: narrow ? 'normal' : 'nowrap', overflow: narrow ? 'visible' : 'hidden' }}
       />
       <EditableText value={body} onCommit={(v) => onFieldChange('body', v)} placeholder="Body copy" multiline style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--text-body)', whiteSpace: 'pre-wrap' }} />
     </div>
@@ -173,9 +182,10 @@ export function ButtonBlockView({ props, editable, onFieldChange }: BlockCompone
   );
 }
 
-export function QuoteBlockView({ props, editable, onFieldChange }: BlockComponentProps) {
+export function QuoteBlockView({ props, editable, onFieldChange, scale = 1 }: BlockComponentProps) {
   const align = str(props, 'align', 'center') === 'left' ? 'left' : 'center';
-  const size = str(props, 'size', 'normal') === 'large' ? 26 : 20;
+  const baseSize = str(props, 'size', 'normal') === 'large' ? 26 : 20;
+  const size = scaledFontSize(baseSize, scale, 14, 64);
   const quoteText = str(props, 'quoteText');
   const citation = str(props, 'citation');
   if (!editable && !quoteText) return null;

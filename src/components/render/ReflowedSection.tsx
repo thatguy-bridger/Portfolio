@@ -14,6 +14,7 @@
 // false and renders exactly as before Phase 3 — the editor must stay
 // completely unaffected by this feature.
 import { reflowOrder } from '../../lib/blocks/reflow';
+import { blockScale } from '../../lib/blocks/scale';
 import type { PageSection } from '../../lib/blocks/types';
 import { BlockRenderer } from '../blocks/BlockRenderer';
 import { MagneticBlock } from '../motion/MagneticBlock';
@@ -38,7 +39,7 @@ export function ReflowedSection({ section, motionEnabled = false }: { section: P
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 520, margin: '0 auto' }}>
         {ordered.map((block) => {
-          const content = <BlockRenderer type={block.type} props={block.props} editable={false} onFieldChange={noop} narrow />;
+          const content = <BlockRenderer type={block.type} props={block.props} editable={false} onFieldChange={noop} narrow scale={blockScale(block.type, block.position)} />;
           const style: React.CSSProperties = { width: '100%', minHeight: Math.min(block.position.h, 480) };
           return motionEnabled ? (
             <MagneticBlock key={block.id} type={block.type} style={style}>
