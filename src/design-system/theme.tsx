@@ -27,6 +27,7 @@ interface ThemeContextValue {
   setDisplayFont: (id: string) => void;
   setBodyFont: (id: string) => void;
   setMonoFont: (id: string) => void;
+  applyFontCombo: (combo: { displayId: string; bodyId: string; monoId: string }) => void;
   reducedMotion: boolean;
 }
 
@@ -177,6 +178,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setMonoFont: (id) => {
       setMonoFontId(id);
       writeLS(MONO_FONT_KEY, id);
+    },
+    // Applies a curated FONT_COMBOS entry: sets all three font slots together, persisted through
+    // the same localStorage keys individual selection already uses — a combo has no separate
+    // identity in storage, so "currently applied combo" is derived by matching ids, not stored.
+    applyFontCombo: (combo) => {
+      setDisplayFontId(combo.displayId);
+      writeLS(DISPLAY_FONT_KEY, combo.displayId);
+      setBodyFontId(combo.bodyId);
+      writeLS(BODY_FONT_KEY, combo.bodyId);
+      setMonoFontId(combo.monoId);
+      writeLS(MONO_FONT_KEY, combo.monoId);
     },
     reducedMotion,
   };
