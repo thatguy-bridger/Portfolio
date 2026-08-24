@@ -39,6 +39,19 @@ const { title } = Astro.props;
       (function () {
         try {
           var KEY = 'portfolio:theme';
+          var VALID_MODES = ['light', 'dark', 'auto'];
+
+          // Anything other than exactly one of VALID_MODES — a value left over from a
+          // previous version of the site sharing this origin/key, a hand-edited or
+          // corrupted localStorage entry, anything — must fall back to 'auto' here.
+          // Every consumer (ThemeToggle, ThemeProvider/ThemeSettingsPanel) trusts get()'s
+          // return value as one of the three modes and indexes lookup tables keyed by it
+          // with no validation of their own; an unrecognized mode silently produced
+          // `undefined` from those lookups (a blank icon + blank label), so this is the
+          // one place that must guarantee the contract instead of every caller re-checking it.
+          function normalize(mode) {
+            return VALID_MODES.indexOf(mode) !== -1 ? mode : 'auto';
+          }
 
           function apply(mode) {
             var root = document.documentElement;
@@ -46,12 +59,12 @@ const { title } = Astro.props;
             else root.removeAttribute('data-theme');
           }
 
-          var stored = localStorage.getItem(KEY) || 'auto';
+          var stored = normalize(localStorage.getItem(KEY));
           apply(stored);
 
           window.PortfolioTheme = {
             get: function () {
-              return localStorage.getItem(KEY) || 'auto';
+              return normalize(localStorage.getItem(KEY));
             },
             set: function (mode) {
               try {
