@@ -85,6 +85,31 @@ export function computeMoveSnap(
   };
 }
 
+/**
+ * Hard-clamps a box so it can never leave the canvas's own bounds — left/top
+ * can't go negative, right/bottom can't pass canvasWidth/maxHeight. Shrinks
+ * width/height from whichever side actually overflowed rather than
+ * translating the whole box, so e.g. overshooting the west resize handle
+ * clamps the left edge at 0 while leaving the right edge exactly where it
+ * was, instead of the box jumping. Used both on the raw drag box (before
+ * snapping) and again on the post-snap result (a snap target borrowed from
+ * another block's edge could in principle sit outside these bounds, if that
+ * block predates this hard limit), so the final position is always in
+ * bounds regardless of which path produced it.
+ */
+export function clampToCanvasBounds(box: BlockPosition, canvasWidth: number, maxHeight: number): BlockPosition {
+  let { x, y, w, h } = box;
+  if (x < 0) { w += x; x = 0; }
+  if (y < 0) { h += y; y = 0; }
+  if (x + w > canvasWidth) w = canvasWidth - x;
+  if (y + h > maxHeight) h = maxHeight - y;
+  w = Math.max(MIN_SIZE, w);
+  h = Math.max(MIN_SIZE, h);
+  x = Math.min(x, Math.max(0, canvasWidth - w));
+  y = Math.min(y, Math.max(0, maxHeight - h));
+  return { x, y, w, h };
+}
+
 export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
 /**

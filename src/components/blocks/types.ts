@@ -27,6 +27,17 @@ export interface BlockComponentProps {
   // would squeeze each side into an unreadably narrow sliver. Every other
   // block type ignores this.
   narrow?: boolean;
+  // How far this block's box currently departs from its type's reference
+  // ("1.0 scale") size — see lib/blocks/scale.ts's blockScale(). Passed by
+  // every render path (CanvasEditor.tsx, ReflowedSection.tsx, PublicPage.tsx)
+  // so a block resized bigger/smaller renders its text bigger/smaller
+  // identically in the editor and for real visitors, never just in one
+  // view. Text-bearing block types (Hero/RichText/Quote/ImageText's
+  // heading) use it to compute a responsive font size; every other block
+  // type ignores it. Defaults to 1 (normal size) when absent, e.g. for a
+  // block rendered as a nested Columns/Carousel slot item, which has no
+  // box of its own to scale against.
+  scale?: number;
 }
 
 export function str(props: Record<string, unknown>, key: string, fallback = ''): string {
